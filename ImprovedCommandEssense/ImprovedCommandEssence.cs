@@ -21,7 +21,7 @@ namespace ImprovedCommandEssence
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Cercain";
         public const string PluginName = "ImprovedCommandEssence";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.0.1";
 
         public static ConfigFile configFile = new ConfigFile(Paths.ConfigPath + "\\ImprovedCommandEssence.cfg", true);
 
@@ -88,6 +88,8 @@ namespace ImprovedCommandEssence
                 On.RoR2.ChestBehavior.ItemDrop -= ItemDrop;
                 On.RoR2.PickupDropletController.OnCollisionEnter -= DropletCollisionEnter;
             }
+            if (!onInDropShip.Value)
+                On.RoR2.ShopTerminalBehavior.DropPickup -= TerminalDrop;
         }
 
         [Server]
