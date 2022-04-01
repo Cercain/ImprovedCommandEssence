@@ -13,7 +13,7 @@ using PickupTransmutationManager = RoR2.PickupTransmutationManager;
 
 namespace ImprovedCommandEssence
 {
-    [BepInDependency(R2API.R2API.PluginGUID)]
+    //[BepInDependency(R2API.R2API.PluginGUID)]
     [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
     
     public class ImprovedCommandEssence : BaseUnityPlugin
@@ -33,6 +33,8 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<int> itemAmountEquip { get; set; }
         public static ConfigEntry<int> itemAmountBoss { get; set; }
         public static ConfigEntry<bool> keepCategory { get; set; }
+        public static ConfigEntry<bool> onInBazaar { get; set; }
+        public static ConfigEntry<bool> onInDropShip { get; set; }
         
         public void OnEnable()
         {
@@ -44,14 +46,17 @@ namespace ImprovedCommandEssence
             itemAmountVoid = configFile.Bind("ImprovedCommandEssence", "itemAmountVoid", 2, new ConfigDescription("Set the amount of Blue items shown when opening a Command Essences."));
             itemAmountEquip = configFile.Bind("ImprovedCommandEssence", "itemAmountEquip", 4, new ConfigDescription("Set the amount of Orange items shown when opening a Command Essences."));
             keepCategory = configFile.Bind("ImprovedCommandEssence", "keepCategory", true, new ConfigDescription("Set if category chests only show items of the corresponding category."));
+            onInBazaar = configFile.Bind("ImprovedCommandEssence", "onInBazaar", false, new ConfigDescription("Set if the Command Artifact is turn on in the Bazaar."));
+            onInDropShip = configFile.Bind("ImprovedCommandEssence", "onInDropShip", false, new ConfigDescription("Set if the Command Artifact is turn on for Drop Ship items."));
 
             Config.SettingChanged += ConfigOnSettingChanged;
             On.RoR2.PickupPickerController.SetOptionsFromPickupForCommandArtifact += SetOptions;
-            if (keepCategory.Value)
-            {
-                On.RoR2.ChestBehavior.ItemDrop += ItemDrop;
-                On.RoR2.PickupDropletController.OnCollisionEnter += DropletCollisionEnter;
-            }
+
+            On.RoR2.ChestBehavior.ItemDrop += ItemDrop;
+            On.RoR2.PickupDropletController.OnCollisionEnter += DropletCollisionEnter;
+
+            if (!onInDropShip.Value)
+                On.RoR2.ShopTerminalBehavior.DropPickup += TerminalDrop;
         }
 
         void ConfigOnSettingChanged(object sender, SettingChangedEventArgs e)
@@ -118,6 +123,20 @@ namespace ImprovedCommandEssence
             self.dropPickup = PickupIndex.none;
         }
 
+        [Server]
+        void TerminalDrop(On.RoR2.ShopTerminalBehavior.orig_DropPickup orig, RoR2.ShopTerminalBehavior self)
+        {
+            if (!NetworkServer.active)
+            {
+                Debug.LogWarning("[Server] function 'System.Void RoR2.ShopTerminalBehavior::DropPickup()' called on client");
+                return;
+            }
+            var track = new TrackBehaviour() { isTerminal = true };
+            self.SetHasBeenPurchased(true);
+            CreatePickupDroplet(self.pickupIndex, (self.dropTransform ? self.dropTransform : self.transform).position, self.transform.TransformVector(self.dropVelocity), track);
+
+        }
+
         public void CreatePickupDroplet(PickupIndex pickupIndex, Vector3 position, Vector3 velocity, TrackBehaviour track)
         {
             CreatePickupDroplet(new GenericPickupController.CreatePickupInfo
@@ -134,6 +153,7 @@ namespace ImprovedCommandEssence
             PickupDropletController component = gameObject.GetComponent<PickupDropletController>();
             var behav = gameObject.AddComponent<TrackBehaviour>();
 
+            behav.isTerminal = track.isTerminal;
             behav.DropTable = track.DropTable;
             behav.ItemTag = track.ItemTag;
             if (component)
@@ -161,7 +181,11 @@ namespace ImprovedCommandEssence
                 self.createPickupInfo.position = self.transform.position;
                 bool flag = true;
 
-                OnDropletHitGroundServer(ref self.createPickupInfo, ref flag, self.gameObject.GetComponent<TrackBehaviour>());
+                if ((BazaarController.instance != null && !onInBazaar.Value) || 
+                    (!onInDropShip.Value && self.gameObject.TryGetComponent<TrackBehaviour>(out var track) && track.isTerminal))
+                        GenericPickupController.CreatePickup(self.createPickupInfo);
+                else
+                    OnDropletHitGroundServer(ref self.createPickupInfo, ref flag, self.gameObject.GetComponent<TrackBehaviour>());
 
                 UnityEngine.Object.Destroy(self.gameObject);
             }
@@ -244,7 +268,43 @@ namespace ImprovedCommandEssence
                 }
             }
             else
-                itemSelection = PickupTransmutationManager.GetGroupFromPickupIndex(pickupIndex);
+                switch (pickupIndex.pickupDef.itemTier)
+                {
+                    case ItemTier.Tier1:
+                        itemSelection = Run.instance.availableTier1DropList.ToArray();
+                        break;
+                    case ItemTier.Tier2:
+                        itemSelection = Run.instance.availableTier2DropList.ToArray();
+                        break;
+                    case ItemTier.Tier3:
+                        itemSelection = Run.instance.availableTier3DropList.ToArray();
+                        break;
+                    case ItemTier.Boss:
+                        itemSelection = Run.instance.availableBossDropList.ToArray();
+                        break;
+                    case ItemTier.Lunar:
+                        if (pickupIndex.pickupDef.equipmentIndex == EquipmentIndex.None)
+                            itemSelection = Run.instance.availableLunarItemDropList.ToArray();
+                        else
+                            itemSelection = Run.instance.availableLunarEquipmentDropList.ToArray();
+                        break;
+                    case ItemTier.VoidTier1:
+                        itemSelection = Run.instance.availableVoidTier1DropList.ToArray();
+                        break;
+                    case ItemTier.VoidTier2:
+                        itemSelection = Run.instance.availableVoidTier2DropList.ToArray();
+                        break;
+                    case ItemTier.VoidTier3:
+                        itemSelection = Run.instance.availableVoidTier3DropList.ToArray();
+                        break;
+                    case ItemTier.VoidBoss:
+                        itemSelection = Run.instance.availableVoidBossDropList.ToArray();
+                        break;
+                    case ItemTier.NoTier:
+                        if (pickupIndex.pickupDef.equipmentIndex != EquipmentIndex.None)
+                            itemSelection = Run.instance.availableEquipmentDropList.ToArray();
+                        break;
+                }
 
             PickupPickerController.Option[] options;
 
@@ -284,5 +344,6 @@ namespace ImprovedCommandEssence
     {
         public ItemTag ItemTag { get; set; }
         public PickupDropTable DropTable { get; set; }
+        public bool isTerminal { get; set; }
     }
 }
