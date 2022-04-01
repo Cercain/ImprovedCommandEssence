@@ -1,7 +1,7 @@
 ﻿{
 	"name": "ImprovedCommandEssence",
 	"version_number": "1.0.0",
-	"website_url": "",
+	"website_url": "https://github.com/Cercain/ImprovedCommandEssence",
 	"description": "Balances the Command Artifact to only show a smaller selection of options",
 	"dependencies": [
 		"bbepis-BepInExPack-5.4.1902",
