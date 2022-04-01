@@ -29,14 +29,19 @@ Improved Command Essence is highly configurable, you can change the amount of op
 | Equipment (Orange)  |  4 |
 | Void (Purple)  |  2 |
 
-(All void tiers use the same config)
+(All void tiers use the same config)<br />
 (Lunar items and lunar equipment use the same config)
 
 #### Toggle Options
 | Name             |    default      | Description |
 |----------|:-------------:|------------|
+| keepCategory   |  true | If true Category Chests will only contain options of the same category |
 | onInBazaar   |  false | If false item drops in the Bazaar will drop as the actual item not a Command Essence |
 | onInDropShip |  false  | If false item drops from terminals (like the Drop Ship) will drop as the actual item not a Command Essence |
+
+(Note that Category chests are bugged in v1.2.2.0 and will only contain item with ONLY the same tag. Use https://thunderstore.io/package/Cercain/FixedCategoryChests/ to fix this)<br/>
+(By default the only Terminal Shops that spawn in Command runs are Drop Ships but this toggle affects all of them)
+
 
 ## Changelog
 
@@ -48,3 +53,7 @@ Improved Command Essence is highly configurable, you can change the amount of op
 
 * Add a toggle for the teleporter boss item drops of the same rarity to all contain the same options
 * Add a toggle for boss items dropped via Trophy Hunter's Tricorn to drop as the boss item instead of a Command Essence
+
+## Contact for bugs and suggestions
+
+Lilly.Varous#7620 on Discord
