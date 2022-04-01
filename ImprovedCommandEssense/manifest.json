@@ -1,0 +1,10 @@
+﻿{
+	"name": "ImprovedCommandEssence",
+	"version_number": "1.0.0",
+	"website_url": "",
+	"description": "Balances the Command Artifact to only show a smaller selection of options",
+	"dependencies": [
+		"bbepis-BepInExPack-5.4.1902",
+		"RiskofThunder-HookGenPatcher-1.2.3"
+	]
+}
