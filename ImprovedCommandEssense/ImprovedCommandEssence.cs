@@ -8,20 +8,16 @@ using RoR2;
 using RoR2.Artifacts;
 using UnityEngine;
 using UnityEngine.Networking;
-using PickupIndex = RoR2.PickupIndex;
-using PickupTransmutationManager = RoR2.PickupTransmutationManager;
 
 namespace ImprovedCommandEssence
 {
-    //[BepInDependency(R2API.R2API.PluginGUID)]
-    [BepInPlugin(PluginGUID, PluginName, PluginVersion)]
-    
+    [BepInPlugin(PluginGUID, PluginName, PluginVersion)]    
     public class ImprovedCommandEssence : BaseUnityPlugin
     {
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Cercain";
         public const string PluginName = "ImprovedCommandEssence";
-        public const string PluginVersion = "1.1.0";
+        public const string PluginVersion = "1.1.1";
 
         public static ConfigFile configFile = new ConfigFile(Paths.ConfigPath + "\\ImprovedCommandEssence.cfg", true);
 
@@ -37,6 +33,9 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<bool> onInDropShip { get; set; }
         public static ConfigEntry<bool> sameBossDrops { get; set; }
         public static ConfigEntry<bool> onForTrophy { get; set; }
+
+        List<int> eliteEquipIds = new List<int>() { 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 };
+        List<int> specialDropIds = new List<int>() { 171, 5, 125, 150 };
 
         void ConfigOnSettingChanged(object sender, SettingChangedEventArgs e)
         {
@@ -424,10 +423,14 @@ namespace ImprovedCommandEssence
                 bool flag = true;
 
                 var trackBool = self.gameObject.TryGetComponent<TrackBehaviour>(out var track);
+                    
 
-                if((!onInBazaar.Value && BazaarController.instance != null)  || 
+                if ((!onInBazaar.Value && BazaarController.instance != null) ||
                     (!onInDropShip.Value && trackBool && track.PickupSource == PickupSource.Terminal) ||
-                    (!onForTrophy.Value && trackBool && track.PickupSource == PickupSource.BossHunter))
+                    (!onForTrophy.Value && trackBool && track.PickupSource == PickupSource.BossHunter) ||
+                    (self.pickupIndex.pickupDef == null || (self.pickupIndex.pickupDef.itemIndex == ItemIndex.None && self.pickupIndex.pickupDef.equipmentIndex == EquipmentIndex.None && self.pickupIndex.pickupDef.itemTier == ItemTier.NoTier)) ||
+                    (eliteEquipIds.Contains((int)self.pickupIndex.pickupDef.equipmentIndex)) ||
+                    (specialDropIds.Contains((int)self.pickupIndex.pickupDef.itemIndex)))
                         GenericPickupController.CreatePickup(self.createPickupInfo);
                 else
                     OnDropletHitGroundServer(ref self.createPickupInfo, ref flag, self.gameObject.GetComponent<TrackBehaviour>());
@@ -440,6 +443,7 @@ namespace ImprovedCommandEssence
         {
             PickupIndex pickupIndex = createPickupInfo.pickupIndex;
             PickupDef pickupDef = PickupCatalog.GetPickupDef(pickupIndex);
+            
             if (pickupDef == null || (pickupDef.itemIndex == ItemIndex.None && pickupDef.equipmentIndex == EquipmentIndex.None && pickupDef.itemTier == ItemTier.NoTier))
             {
                 return;

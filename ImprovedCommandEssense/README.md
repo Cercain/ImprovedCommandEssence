@@ -47,6 +47,11 @@ Improved Command Essence is highly configurable, you can change the amount of op
 
 ## Changelog
 
+**1.1.1**
+
+* (BugFix) Lunar Coins now drop correctly
+* (BugFix) Special items like Aspects and the Halcyon Seed now correctly drop as their items instead of Command Essences
+
 **1.1.0**
 
 * (Togglable) Command Essences dropped from the teleporter boss of the same rarity to contain the same options
