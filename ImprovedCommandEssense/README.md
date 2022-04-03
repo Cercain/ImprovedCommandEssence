@@ -47,6 +47,15 @@ Improved Command Essence is highly configurable, you can change the amount of op
 
 ## Changelog
 
+**1.1.4**
+
+* (Bugfix) Keep Category chest now works correctly
+
+**1.1.3**
+
+* (BugFix) Lunar equipment now correctly drops as a Command Essence containing Lunar equipment
+* (BugFix) Special boss drops (ie. Aurelionite) now actually correctly drop as their items instead of as a Command Essence
+
 **1.1.2**
 
 * (Compatability Fix) ZetAspects now works with the Item drop mode
@@ -71,7 +80,7 @@ Improved Command Essence is highly configurable, you can change the amount of op
 
 ## Known Bugs & Compatability Issues
 
-* None
+* [Current Issues List](https://github.com/Cercain/ImprovedCommandEssence/issues)
 
 ## Future Plans
 

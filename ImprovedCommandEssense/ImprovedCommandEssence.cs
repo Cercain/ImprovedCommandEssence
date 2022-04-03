@@ -17,7 +17,7 @@ namespace ImprovedCommandEssence
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Cercain";
         public const string PluginName = "ImprovedCommandEssence";
-        public const string PluginVersion = "1.1.2";
+        public const string PluginVersion = "1.1.4";
 
         public static ConfigFile configFile = new ConfigFile(Paths.ConfigPath + "\\ImprovedCommandEssence.cfg", true);
 
@@ -292,12 +292,33 @@ namespace ImprovedCommandEssence
                 float angle = 360f / (float)num;
                 Vector3 vector = Quaternion.AngleAxis((float)UnityEngine.Random.Range(0, 360), Vector3.up) * (Vector3.up * 40f + Vector3.forward * 5f);
                 Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.up);
-                
+
+
+                if (self.bossDrops.Any(x => (int)x.pickupDef.itemIndex == 171))
+                {
+                    var track = new TrackBehaviour();
+                    track.PickupSource = PickupSource.Boss;
+                    track.ItemTag = ItemTag.Any;
+                    track.Options = new PickupPickerController.Option[0];
+
+                    CreatePickupDroplet(self.bossDrops.First(), self.dropPosition.position, vector, track);
+                }
+
+                PickupIndex pickupIndex2 = indexList[0];
                 int i = 0;
                 while (i < num)
                 {
                     if ((self.bossDrops.Count > 0 || self.bossDropTables.Count > 0) && self.rng.nextNormalizedFloat <= self.bossDropChance)
                     {
+                        if (self.bossDropTables.Count > 0)
+                        {
+                            pickupIndex2 = self.rng.NextElementUniform<PickupDropTable>(self.bossDropTables).GenerateDrop(self.rng);
+                        }
+                        else
+                        {
+                            pickupIndex2 = self.rng.NextElementUniform<PickupIndex>(self.bossDrops);
+                        }
+
                         indexList = (from x in Run.instance.availableBossDropList orderby self.rng.Next() select x).Take(itemAmountBoss.Value).ToList();
                     }
 
@@ -318,7 +339,7 @@ namespace ImprovedCommandEssence
                     track.ItemTag = ItemTag.Any;
                     track.Options = options;
 
-                    CreatePickupDroplet(indexList[0], self.dropPosition.position, vector, track);
+                    CreatePickupDroplet(pickupIndex2, self.dropPosition.position, vector, track);
                     i++;
                     vector = rotation * vector;
                 }
@@ -353,7 +374,7 @@ namespace ImprovedCommandEssence
             {
                 CreatePickupDroplet(self.dropPickup, self.dropTransform.position + Vector3.up * 1.5f, vector, track);
                 vector = rotation * vector;
-                self.Roll();
+                //self.Roll();
             }
             self.dropPickup = PickupIndex.none;
         }
@@ -420,7 +441,7 @@ namespace ImprovedCommandEssence
             if (NetworkServer.active && self.alive)
             {
 
-                Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.value}");
+                //Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.pickupDef.itemIndex}");
                 self.alive = false;
                 self.createPickupInfo.position = self.transform.position;
                 bool flag = true;
@@ -436,7 +457,7 @@ namespace ImprovedCommandEssence
                     (zetAspectItem.Contains(self.pickupIndex.ToString())))
                         GenericPickupController.CreatePickup(self.createPickupInfo);
                 else
-                    OnDropletHitGroundServer(ref self.createPickupInfo, ref flag, self.gameObject.GetComponent<TrackBehaviour>());
+                    OnDropletHitGroundServer(ref self.createPickupInfo, ref flag, track);
 
                 UnityEngine.Object.Destroy(self.gameObject);
             }
@@ -482,9 +503,8 @@ namespace ImprovedCommandEssence
             {
                 var choices = (tracking.DropTable as BasicPickupDropTable).selector.choices;
                 itemSelection = choices.Where(x => x.value.pickupDef.itemTier == pickupIndex.pickupDef.itemTier).Select(x => x.value).ToArray();
-
             }
-            if(tracking != null && sameBossDrops.Value && tracking.PickupSource == PickupSource.Boss)
+            else if(tracking != null && sameBossDrops.Value && tracking.PickupSource == PickupSource.Boss)
             {
                 self.SetOptionsServer(tracking.Options);
                 return;
@@ -505,10 +525,7 @@ namespace ImprovedCommandEssence
                         itemSelection = Run.instance.availableBossDropList.ToArray();
                         break;
                     case ItemTier.Lunar:
-                        if (pickupIndex.pickupDef.equipmentIndex == EquipmentIndex.None)
                             itemSelection = Run.instance.availableLunarItemDropList.ToArray();
-                        else
-                            itemSelection = Run.instance.availableLunarEquipmentDropList.ToArray();
                         break;
                     case ItemTier.VoidTier1:
                         itemSelection = Run.instance.availableVoidTier1DropList.ToArray();
@@ -524,7 +541,10 @@ namespace ImprovedCommandEssence
                         break;
                     case ItemTier.NoTier:
                         if (pickupIndex.pickupDef.equipmentIndex != EquipmentIndex.None)
-                            itemSelection = Run.instance.availableEquipmentDropList.ToArray();
+                            if (pickupIndex.pickupDef.isLunar)
+                                itemSelection = Run.instance.availableLunarEquipmentDropList.ToArray();
+                            else
+                                itemSelection = Run.instance.availableEquipmentDropList.ToArray();
                         break;
                 }
 
