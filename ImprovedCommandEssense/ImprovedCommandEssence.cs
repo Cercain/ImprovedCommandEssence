@@ -36,6 +36,7 @@ namespace ImprovedCommandEssence
 
         List<int> eliteEquipIds = new List<int>() { 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 };
         List<int> specialDropIds = new List<int>() { 171, 5, 125, 150 };
+        List<string> zetAspectItem = new List<string>() { "ItemIndex.ZetAspectWhite", "ItemIndex.ZetAspectBlue", "ItemIndex.ZetAspectRed", "ItemIndex.ZetAspectHaunted", "ItemIndex.ZetAspectPoison", "ItemIndex.ZetAspectLunar", "ItemIndex.ZetAspectEarth", "ItemIndex.ZetAspectVoid", "ItemIndex.ZetAspectSanguine" };
 
         void ConfigOnSettingChanged(object sender, SettingChangedEventArgs e)
         {
@@ -417,20 +418,22 @@ namespace ImprovedCommandEssence
             }
 
             if (NetworkServer.active && self.alive)
-            {                
+            {
+
+                Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.value}");
                 self.alive = false;
                 self.createPickupInfo.position = self.transform.position;
                 bool flag = true;
 
                 var trackBool = self.gameObject.TryGetComponent<TrackBehaviour>(out var track);
-                    
 
                 if ((!onInBazaar.Value && BazaarController.instance != null) ||
                     (!onInDropShip.Value && trackBool && track.PickupSource == PickupSource.Terminal) ||
                     (!onForTrophy.Value && trackBool && track.PickupSource == PickupSource.BossHunter) ||
                     (self.pickupIndex.pickupDef == null || (self.pickupIndex.pickupDef.itemIndex == ItemIndex.None && self.pickupIndex.pickupDef.equipmentIndex == EquipmentIndex.None && self.pickupIndex.pickupDef.itemTier == ItemTier.NoTier)) ||
                     (eliteEquipIds.Contains((int)self.pickupIndex.pickupDef.equipmentIndex)) ||
-                    (specialDropIds.Contains((int)self.pickupIndex.pickupDef.itemIndex)))
+                    (specialDropIds.Contains((int)self.pickupIndex.pickupDef.itemIndex)) ||
+                    (zetAspectItem.Contains(self.pickupIndex.ToString())))
                         GenericPickupController.CreatePickup(self.createPickupInfo);
                 else
                     OnDropletHitGroundServer(ref self.createPickupInfo, ref flag, self.gameObject.GetComponent<TrackBehaviour>());

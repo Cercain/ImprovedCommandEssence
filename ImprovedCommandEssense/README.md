@@ -47,6 +47,10 @@ Improved Command Essence is highly configurable, you can change the amount of op
 
 ## Changelog
 
+**1.1.2**
+
+* (Compatability Fix) ZetAspects now works with the Item drop mode
+
 **1.1.1**
 
 * (BugFix) Lunar Coins now drop correctly
@@ -64,6 +68,10 @@ Improved Command Essence is highly configurable, you can change the amount of op
 **1.0.0**
 
 * Initial Release
+
+## Known Bugs & Compatability Issues
+
+* None
 
 ## Future Plans
 
