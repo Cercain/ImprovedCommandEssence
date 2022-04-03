@@ -17,7 +17,7 @@ namespace ImprovedCommandEssence
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Cercain";
         public const string PluginName = "ImprovedCommandEssence";
-        public const string PluginVersion = "1.1.1";
+        public const string PluginVersion = "1.1.2";
 
         public static ConfigFile configFile = new ConfigFile(Paths.ConfigPath + "\\ImprovedCommandEssence.cfg", true);
 
