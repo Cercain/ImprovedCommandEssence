@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BepInEx;
 using BepInEx.Configuration;
+using EntityStates.Scrapper;
 using RoR2;
 using RoR2.Artifacts;
 using UnityEngine;
@@ -17,7 +18,7 @@ namespace ImprovedCommandEssence
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Cercain";
         public const string PluginName = "ImprovedCommandEssence";
-        public const string PluginVersion = "1.1.4";
+        public const string PluginVersion = "1.3.0";
 
         public static ConfigFile configFile = new ConfigFile(Paths.ConfigPath + "\\ImprovedCommandEssence.cfg", true);
 
@@ -27,15 +28,22 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<int> itemAmountLunar { get; set; }
         public static ConfigEntry<int> itemAmountVoid { get; set; }
         public static ConfigEntry<int> itemAmountEquip { get; set; }
+        public static ConfigEntry<int> itemAmountPotential { get; set; }
+        public static ConfigEntry<int> itemAmountPotentialCache { get; set; }
         public static ConfigEntry<int> itemAmountBoss { get; set; }
         public static ConfigEntry<bool> keepCategory { get; set; }
         public static ConfigEntry<bool> onInBazaar { get; set; }
         public static ConfigEntry<bool> onInDropShip { get; set; }
+        public static ConfigEntry<bool> onForAdaptive { get; set; }
+        public static ConfigEntry<bool> onForPotential { get; set; }
         public static ConfigEntry<bool> sameBossDrops { get; set; }
         public static ConfigEntry<bool> onForTrophy { get; set; }
-
-        List<int> eliteEquipIds = new List<int>() { 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 };
-        List<int> specialDropIds = new List<int>() { 171, 5, 125, 150 };
+        public static ConfigEntry<bool> enableScrappers { get; set; }
+        public static ConfigEntry<bool> enablePrinters { get; set; }
+        public static ConfigEntry<bool> enableMultishops { get; set; }
+        public static ConfigEntry<bool> scrappersDropEssence { get; set; }
+        public static ConfigEntry<int> essenceChance { get; set; }
+        
         List<string> zetAspectItem = new List<string>() { "ItemIndex.ZetAspectWhite", "ItemIndex.ZetAspectBlue", "ItemIndex.ZetAspectRed", "ItemIndex.ZetAspectHaunted", "ItemIndex.ZetAspectPoison", "ItemIndex.ZetAspectLunar", "ItemIndex.ZetAspectEarth", "ItemIndex.ZetAspectVoid", "ItemIndex.ZetAspectSanguine" };
 
         void ConfigOnSettingChanged(object sender, SettingChangedEventArgs e)
@@ -57,6 +65,11 @@ namespace ImprovedCommandEssence
 
             if (itemAmountEquip.Value <= 0)
                 itemAmountEquip.Value = 1;
+
+            if (essenceChance.Value > 100)
+                essenceChance.Value = 100;
+            if (essenceChance.Value < 0)
+                essenceChance.Value = 0;
         }
 
         public void OnEnable()
@@ -68,12 +81,23 @@ namespace ImprovedCommandEssence
             itemAmountLunar = configFile.Bind("ImprovedCommandEssence", "itemAmountLunar", 2, new ConfigDescription("Set the amount of Blue items shown when opening a Command Essences."));
             itemAmountVoid = configFile.Bind("ImprovedCommandEssence", "itemAmountVoid", 2, new ConfigDescription("Set the amount of Blue items shown when opening a Command Essences."));
             itemAmountEquip = configFile.Bind("ImprovedCommandEssence", "itemAmountEquip", 4, new ConfigDescription("Set the amount of Orange items shown when opening a Command Essences."));
+            itemAmountPotential = configFile.Bind("ImprovedCommandEssence", "itemAmountPotential", 6, new ConfigDescription("Set the amount of items shown when opening a Void Potential from a Void Cache."));
+            itemAmountPotentialCache = configFile.Bind("ImprovedCommandEssence", "itemAmountPotentialCache", 4, new ConfigDescription("Set the amount of items shown when opening a Void Potential from a Void Triple."));
+            essenceChance = configFile.Bind("ImprovedCommandEssence", "essenceChance", 100, new ConfigDescription("Set the chance for item drops to drop as a Command Essence (0-100) from non-explicit chests"));
             keepCategory = configFile.Bind("ImprovedCommandEssence", "keepCategory", true, new ConfigDescription("Set if category chests only show items of the corresponding category."));
             onInBazaar = configFile.Bind("ImprovedCommandEssence", "onInBazaar", false, new ConfigDescription("Set if the Command Artifact is turn on in the Bazaar."));
             onInDropShip = configFile.Bind("ImprovedCommandEssence", "onInDropShip", false, new ConfigDescription("Set if the Command Artifact is turn on for Drop Ship items."));
+            onForAdaptive = configFile.Bind("ImprovedCommandEssence", "onForAdaptive", false, new ConfigDescription("Set if the Command Artifact is turn on for Adaptive Chest items."));
+            onForPotential = configFile.Bind("ImprovedCommandEssence", "onForAdaptive", false, new ConfigDescription("Set if the Command Artifact is turn on for Void Potentials and Void Caches."));
             sameBossDrops = configFile.Bind("ImprovedCommandEssence", "sameBossDrops", true, new ConfigDescription("Set if the Command Essences that drop from the Teleporter boss give the same options."));
             onForTrophy = configFile.Bind("ImprovedCommandEssence", "onForTrophy", false, new ConfigDescription("Set if the item dropped by bosses killed via Trophy Hunter's Tricorn drop as a Command Essence (true) or the boss item (false)"));
+            enableScrappers = configFile.Bind("ImprovedCommandEssence", "enableScrappers", false, new ConfigDescription("Set if Scrappers spawn"));
+            enablePrinters = configFile.Bind("ImprovedCommandEssence", "enablePrinters", false, new ConfigDescription("Set if Printers spawn (onInDropShip must be on to drop as the item)"));
+            enableMultishops = configFile.Bind("ImprovedCommandEssence", "enableTerminals", false, new ConfigDescription("Set if Multishops spawn (onInDropShip must be on to drop as the item)"));
+            scrappersDropEssence = configFile.Bind("ImprovedCommandEssence", "scrappersDropEssence", false, new ConfigDescription("Set if Scrappers drop scrap (false) or Command Essence (true)"));
 
+            RoR2Application.onLoad += InitExclude;
+            
             Config.SettingChanged += ConfigOnSettingChanged;
             On.RoR2.PickupPickerController.SetOptionsFromPickupForCommandArtifact += SetOptions;
 
@@ -83,29 +107,77 @@ namespace ImprovedCommandEssence
             if (!onInDropShip.Value)
                 On.RoR2.ShopTerminalBehavior.DropPickup += TerminalDrop;
 
+            if (!onForAdaptive.Value)
+                On.RoR2.RouletteChestController.EjectPickupServer += RouletteEject;
+
             if (sameBossDrops.Value)
                 On.RoR2.BossGroup.DropRewards += BossDropRewards;
 
             if (!onForTrophy.Value)
                 On.RoR2.EquipmentSlot.FireBossHunter += BossHunterDrop;
+
+            if (enableScrappers.Value || enableMultishops.Value || enablePrinters.Value)
+                On.RoR2.Artifacts.CommandArtifactManager.OnGenerateInteractableCardSelection += OnGenCommandCards;
+
+            if (!scrappersDropEssence.Value)
+                On.EntityStates.Scrapper.ScrappingToIdle.OnEnter += ScrapperDrop;
+
+            if (!onForPotential.Value)
+            {
+                On.RoR2.OptionChestBehavior.ItemDrop += OptionItemDrop;
+                On.RoR2.OptionChestBehavior.Roll += PotentialRoll;
+            }
         }
 
-        public void OnDisable()
+        List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>();
+        List<ItemDef> specialDropIds = new List<ItemDef>();
+        private void InitExclude()
         {
-            On.RoR2.PickupPickerController.SetOptionsFromPickupForCommandArtifact -= SetOptions;
-            if (keepCategory.Value)
+            
+            eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite };
+            specialDropIds = new List<ItemDef>() { RoR2Content.Items.TitanGoldDuringTP, RoR2Content.Items.ArtifactKey, RoR2Content.Items.Pearl, RoR2Content.Items.ShinyPearl };
+
+        }
+
+        [Server]
+        public void PotentialRoll(On.RoR2.OptionChestBehavior.orig_Roll orig, RoR2.OptionChestBehavior self)
+        {
+            if (!NetworkServer.active)
             {
-                On.RoR2.ChestBehavior.ItemDrop -= ItemDrop;
-                On.RoR2.PickupDropletController.OnCollisionEnter -= DropletCollisionEnter;
+                Debug.LogWarning("[Server] function 'System.Void RoR2.OptionChestBehavior::Roll()' called on client");
+                return;
             }
-            if (!onInDropShip.Value)
-                On.RoR2.ShopTerminalBehavior.DropPickup -= TerminalDrop;
 
-            if (sameBossDrops.Value)
-                On.RoR2.BossGroup.DropRewards -= BossDropRewards;
+            if(self.gameObject.GetComponent<GenericDisplayNameProvider>().displayToken == "LOCKBOXVOID_NAME")                
+                self.generatedDrops = self.dropTable.GenerateUniqueDrops(itemAmountPotentialCache.Value, self.rng);
+            else
+                self.generatedDrops = self.dropTable.GenerateUniqueDrops(itemAmountPotential.Value, self.rng);
+        }
 
-            if (!onForTrophy.Value)
-                On.RoR2.EquipmentSlot.FireBossHunter -= BossHunterDrop;
+        [Server]
+        public void OptionItemDrop(On.RoR2.OptionChestBehavior.orig_ItemDrop orig, RoR2.OptionChestBehavior self)
+        {
+            if (!NetworkServer.active)
+            {
+                Debug.LogWarning("[Server] function 'System.Void RoR2.OptionChestBehavior::ItemDrop()' called on client");
+                return;
+            }
+            if (self.generatedDrops == null || self.generatedDrops.Length == 0)
+            {
+                return;
+            }
+
+            var track = new TrackBehaviour() { PickupSource = PickupSource.VoidPotential };
+            CreatePickupDroplet(new GenericPickupController.CreatePickupInfo
+            {
+                pickerOptions = PickupPickerController.GenerateOptionsFromArray(self.generatedDrops),
+                prefabOverride = self.pickupPrefab,
+                position = self.dropTransform.position,
+                rotation = Quaternion.identity,
+                pickupIndex = PickupCatalog.FindPickupIndex(self.displayTier)
+            }, self.dropTransform.position, Vector3.up * self.dropUpVelocityStrength + self.dropTransform.forward * self.dropForwardVelocityStrength,
+            track);
+            self.generatedDrops = null;
         }
 
         private bool BossHunterDrop(On.RoR2.EquipmentSlot.orig_FireBossHunter orig, RoR2.EquipmentSlot self)
@@ -148,9 +220,7 @@ namespace ImprovedCommandEssence
             {
                 var tracking = new TrackBehaviour();
                 tracking.ItemTag = ItemTag.Any;
-                tracking.DropTable = null;
                 tracking.PickupSource = PickupSource.BossHunter;
-                tracking.Options = new PickupPickerController.Option[0];
                 CharacterBody body2 = hurtBox.healthComponent.body;
                 Vector3 vector = body2 ? body2.corePosition : Vector3.zero;
                 Vector3 normalized = (vector - self.characterBody.corePosition).normalized;
@@ -266,9 +336,11 @@ namespace ImprovedCommandEssence
             if (participatingPlayerCount != 0 && self.dropPosition)
             {
                 List<PickupIndex> list;
+                PickupIndex pickupIndex = PickupIndex.none;
 
                 if (self.dropTable)
                 {
+                    pickupIndex = self.dropTable.GenerateDrop(self.rng);
                     list = (from x in (self.dropTable as BasicPickupDropTable).selector.choices where x.value.pickupDef.itemTier != ItemTier.Boss select x.value).ToList();
                 }
                 else
@@ -278,6 +350,7 @@ namespace ImprovedCommandEssence
                     {
                         list = Run.instance.availableTier3DropList;
                     }
+                    pickupIndex = self.rng.NextElementUniform<PickupIndex>(list);
                 }
 
                 int itemAmount = GetItemAmountFromTier(list.First().pickupDef);
@@ -293,18 +366,18 @@ namespace ImprovedCommandEssence
                 Vector3 vector = Quaternion.AngleAxis((float)UnityEngine.Random.Range(0, 360), Vector3.up) * (Vector3.up * 40f + Vector3.forward * 5f);
                 Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.up);
 
-
                 if (self.bossDrops.Any(x => (int)x.pickupDef.itemIndex == 171))
                 {
                     var track = new TrackBehaviour();
                     track.PickupSource = PickupSource.Boss;
                     track.ItemTag = ItemTag.Any;
-                    track.Options = new PickupPickerController.Option[0];
 
                     CreatePickupDroplet(self.bossDrops.First(), self.dropPosition.position, vector, track);
                 }
 
-                PickupIndex pickupIndex2 = indexList[0];
+                var bossIndexList = (from x in Run.instance.availableBossDropList orderby self.rng.Next() select x).Take(itemAmountBoss.Value).ToList();
+
+                PickupIndex pickupIndex2 = pickupIndex;
                 int i = 0;
                 while (i < num)
                 {
@@ -319,7 +392,7 @@ namespace ImprovedCommandEssence
                             pickupIndex2 = self.rng.NextElementUniform<PickupIndex>(self.bossDrops);
                         }
 
-                        indexList = (from x in Run.instance.availableBossDropList orderby self.rng.Next() select x).Take(itemAmountBoss.Value).ToList();
+                        indexList = bossIndexList;
                     }
 
                     var options = new PickupPickerController.Option[indexList.Count];
@@ -344,6 +417,100 @@ namespace ImprovedCommandEssence
                     vector = rotation * vector;
                 }
             }
+        }
+
+        private static void OnGenCommandCards(On.RoR2.Artifacts.CommandArtifactManager.orig_OnGenerateInteractableCardSelection orig, SceneDirector sceneDirector, DirectorCardCategorySelection dccs)
+        {
+            dccs.RemoveCardsThatFailFilter(new Predicate<DirectorCard>(CheckCardsFilter));
+        }
+
+        private static bool CheckCardsFilter(DirectorCard card)
+        {
+            GameObject prefab = card.spawnCard.prefab;
+            if (!enableMultishops.Value)
+                if (prefab.GetComponent<MultiShopController>())
+                    return false;
+            if (!enableScrappers.Value)
+                if (prefab.GetComponent<ScrapperController>())
+                    return false;
+            if (!enablePrinters.Value)
+                if (prefab.GetComponent<ShopTerminalBehavior>())
+                    return false;
+
+            return true;
+        }
+        
+        void ScrapperDrop(On.EntityStates.Scrapper.ScrappingToIdle.orig_OnEnter orig, EntityStates.Scrapper.ScrappingToIdle self)
+        {
+            //base
+            {
+                if (self.characterBody)
+                {
+                    self.attackSpeedStat = self.characterBody.attackSpeed;
+                    self.damageStat = self.characterBody.damage;
+                    self.critStat = self.characterBody.crit;
+                    self.moveSpeedStat = self.characterBody.moveSpeed;
+                }
+                self.pickupPickerController = self.GetComponent<PickupPickerController>();
+                self.scrapperController = self.GetComponent<ScrapperController>();
+                self.pickupPickerController.SetAvailable(self.enableInteraction);
+
+            }
+            Util.PlaySound(ScrappingToIdle.enterSoundString, self.gameObject);
+            self.PlayAnimation("Base", "ScrappingToIdle", "Scrapping.playbackRate", ScrappingToIdle.duration);
+            if (ScrappingToIdle.muzzleflashEffectPrefab)
+            {
+                EffectManager.SimpleMuzzleFlash(ScrappingToIdle.muzzleflashEffectPrefab, self.gameObject, ScrappingToIdle.muzzleString, false);
+            }
+            if (!NetworkServer.active)
+            {
+                return;
+            }
+            self.foundValidScrap = false;
+            PickupIndex pickupIndex = PickupIndex.none;
+            ItemDef itemDef = ItemCatalog.GetItemDef(self.scrapperController.lastScrappedItemIndex);
+            if (itemDef != null)
+            {
+                switch (itemDef.tier)
+                {
+                    case ItemTier.Tier1:
+                        pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapWhite");
+                        break;
+                    case ItemTier.Tier2:
+                        pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapGreen");
+                        break;
+                    case ItemTier.Tier3:
+                        pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapRed");
+                        break;
+                    case ItemTier.Boss:
+                        pickupIndex = PickupCatalog.FindPickupIndex("ItemIndex.ScrapYellow");
+                        break;
+                }
+            }
+            if (pickupIndex != PickupIndex.none)
+            {
+                self.foundValidScrap = true;
+                Transform transform = self.FindModelChild(ScrappingToIdle.muzzleString);
+
+                var track = new TrackBehaviour();
+                track.PickupSource = PickupSource.Scrapper;
+
+                CreatePickupDroplet(pickupIndex, transform.position, Vector3.up * ScrappingToIdle.dropUpVelocityStrength + transform.forward * ScrappingToIdle.dropForwardVelocityStrength, track);
+                ScrapperController scrapperController = self.scrapperController;
+                int itemsEaten = scrapperController.itemsEaten;
+                scrapperController.itemsEaten = itemsEaten - 1;
+            }
+        }
+
+        void RouletteEject(On.RoR2.RouletteChestController.orig_EjectPickupServer orig, RoR2.RouletteChestController self, PickupIndex pickupIndex)
+        {
+            if (pickupIndex == PickupIndex.none)
+            {
+                return;
+            }
+            var track = new TrackBehaviour();
+            track.PickupSource = PickupSource.Roulette;
+            CreatePickupDroplet(pickupIndex, self.ejectionTransform.position, self.ejectionTransform.rotation * self.localEjectionVelocity, track);
         }
 
         [Server]
@@ -408,7 +575,6 @@ namespace ImprovedCommandEssence
             }, position, velocity, track);
         }
 
-        // Token: 0x06002C0E RID: 11278 RVA: 0x000BBFA4 File Offset: 0x000BA1A4
         public void CreatePickupDroplet(GenericPickupController.CreatePickupInfo pickupInfo, Vector3 position, Vector3 velocity, TrackBehaviour track)
         {
             GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(PickupDropletController.pickupDropletPrefab, position, Quaternion.identity);
@@ -440,6 +606,16 @@ namespace ImprovedCommandEssence
 
             if (NetworkServer.active && self.alive)
             {
+                List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite };
+                List<ItemDef> specialDropIds = new List<ItemDef>() { RoR2Content.Items.TitanGoldDuringTP, RoR2Content.Items.ArtifactKey, RoR2Content.Items.Pearl, RoR2Content.Items.ShinyPearl };
+
+                foreach (var it in specialDropIds)
+                    if (it != null)
+                        Logger.LogWarning($"{it.itemIndex}:{it.nameToken}");
+
+                foreach (var it in eliteEquipIds)
+                    if (it != null)
+                        Logger.LogWarning($"{it.equipmentIndex}:{it.nameToken}");
 
                 //Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.pickupDef.itemIndex}");
                 self.alive = false;
@@ -448,12 +624,19 @@ namespace ImprovedCommandEssence
 
                 var trackBool = self.gameObject.TryGetComponent<TrackBehaviour>(out var track);
 
-                if ((!onInBazaar.Value && BazaarController.instance != null) ||
+
+                bool doChance = UnityEngine.Random.Range(0, 100f) < essenceChance.Value;
+                
+
+                if (!doChance || (!onInBazaar.Value && BazaarController.instance != null) ||
+                    (!scrappersDropEssence.Value && trackBool && track.PickupSource == PickupSource.Scrapper ) ||
+                    (!onForAdaptive.Value && trackBool && track.PickupSource == PickupSource.Roulette) ||
                     (!onInDropShip.Value && trackBool && track.PickupSource == PickupSource.Terminal) ||
                     (!onForTrophy.Value && trackBool && track.PickupSource == PickupSource.BossHunter) ||
+                    (!onForPotential.Value && trackBool && track.PickupSource == PickupSource.VoidPotential) ||
                     (self.pickupIndex.pickupDef == null || (self.pickupIndex.pickupDef.itemIndex == ItemIndex.None && self.pickupIndex.pickupDef.equipmentIndex == EquipmentIndex.None && self.pickupIndex.pickupDef.itemTier == ItemTier.NoTier)) ||
-                    (eliteEquipIds.Contains((int)self.pickupIndex.pickupDef.equipmentIndex)) ||
-                    (specialDropIds.Contains((int)self.pickupIndex.pickupDef.itemIndex)) ||
+                    (eliteEquipIds.Any(x => x.equipmentIndex == self.pickupIndex.pickupDef.equipmentIndex)) ||
+                    (specialDropIds.Any(x => x.itemIndex == self.pickupIndex.pickupDef.itemIndex)) ||
                     (zetAspectItem.Contains(self.pickupIndex.ToString())))
                         GenericPickupController.CreatePickup(self.createPickupInfo);
                 else
@@ -616,7 +799,6 @@ namespace ImprovedCommandEssence
             }
             return itemAmount;
         }
-
     }
     
     public class TrackBehaviour : MonoBehaviour
@@ -625,6 +807,11 @@ namespace ImprovedCommandEssence
         public PickupDropTable DropTable { get; set; }
         public PickupSource PickupSource { get; set; }
         public PickupPickerController.Option[] Options { get; set; }
+
+        public TrackBehaviour()
+        {
+            Options = new PickupPickerController.Option[0];
+        }
     }
 
     public enum PickupSource
@@ -632,6 +819,9 @@ namespace ImprovedCommandEssence
         Chest,
         Terminal,
         Boss,
-        BossHunter
+        BossHunter,
+        Roulette,
+        Scrapper,
+        VoidPotential
     }
 }
