@@ -58,6 +58,10 @@ The default values are how I like to play, change these up to fit your playstyle
 
 ## Changelog
 
+**1.3.1**
+
+* Rebuilt with updated dlls to support v1.2.3
+
 **1.3.0**
 
 * (Feature) Added a toggle to enable Void Potentials (default enables them)

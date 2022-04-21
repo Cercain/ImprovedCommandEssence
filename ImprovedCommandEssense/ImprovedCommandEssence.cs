@@ -18,7 +18,7 @@ namespace ImprovedCommandEssence
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Cercain";
         public const string PluginName = "ImprovedCommandEssence";
-        public const string PluginVersion = "1.3.0";
+        public const string PluginVersion = "1.3.1";
 
         public static ConfigFile configFile = new ConfigFile(Paths.ConfigPath + "\\ImprovedCommandEssence.cfg", true);
 
@@ -157,6 +157,12 @@ namespace ImprovedCommandEssence
         [Server]
         public void OptionItemDrop(On.RoR2.OptionChestBehavior.orig_ItemDrop orig, RoR2.OptionChestBehavior self)
         {
+            if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
+            {
+                orig(self);
+                return;
+            }
+
             if (!NetworkServer.active)
             {
                 Debug.LogWarning("[Server] function 'System.Void RoR2.OptionChestBehavior::ItemDrop()' called on client");
@@ -182,7 +188,7 @@ namespace ImprovedCommandEssence
 
         private bool BossHunterDrop(On.RoR2.EquipmentSlot.orig_FireBossHunter orig, RoR2.EquipmentSlot self)
         {
-            if (!RunArtifactManager.instance.IsArtifactEnabled(CommandArtifactManager.myArtifact))
+            if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
             {
                 return orig(self);
             }
@@ -326,7 +332,7 @@ namespace ImprovedCommandEssence
 
         private void BossDropRewards(On.RoR2.BossGroup.orig_DropRewards orig, RoR2.BossGroup self)
         {
-            if (!RunArtifactManager.instance.IsArtifactEnabled(CommandArtifactManager.myArtifact))
+            if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
             {
                 orig(self);
                 return;
@@ -442,6 +448,11 @@ namespace ImprovedCommandEssence
         
         void ScrapperDrop(On.EntityStates.Scrapper.ScrappingToIdle.orig_OnEnter orig, EntityStates.Scrapper.ScrappingToIdle self)
         {
+            if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
+            {
+                orig(self);
+                return;
+            }
             //base
             {
                 if (self.characterBody)
@@ -504,6 +515,11 @@ namespace ImprovedCommandEssence
 
         void RouletteEject(On.RoR2.RouletteChestController.orig_EjectPickupServer orig, RoR2.RouletteChestController self, PickupIndex pickupIndex)
         {
+            if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
+            {
+                orig(self,pickupIndex);
+                return;
+            }
             if (pickupIndex == PickupIndex.none)
             {
                 return;
@@ -516,7 +532,7 @@ namespace ImprovedCommandEssence
         [Server]
         void ItemDrop(On.RoR2.ChestBehavior.orig_ItemDrop orig, RoR2.ChestBehavior self)
         {
-            if (!RunArtifactManager.instance.IsArtifactEnabled(CommandArtifactManager.myArtifact))
+            if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
             {
                 orig(self);
                 return;
@@ -549,7 +565,7 @@ namespace ImprovedCommandEssence
         [Server]
         void TerminalDrop(On.RoR2.ShopTerminalBehavior.orig_DropPickup orig, RoR2.ShopTerminalBehavior self)
         {
-            if (!RunArtifactManager.instance.IsArtifactEnabled(CommandArtifactManager.myArtifact))
+            if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
             {
                 orig(self);
                 return;
@@ -598,7 +614,7 @@ namespace ImprovedCommandEssence
 
         public void DropletCollisionEnter(On.RoR2.PickupDropletController.orig_OnCollisionEnter orig, RoR2.PickupDropletController self, Collision collision)
         {
-            if (!RunArtifactManager.instance.IsArtifactEnabled(CommandArtifactManager.myArtifact))
+            if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
             {
                 orig(self, collision);
                 return;
@@ -608,14 +624,6 @@ namespace ImprovedCommandEssence
             {
                 List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite };
                 List<ItemDef> specialDropIds = new List<ItemDef>() { RoR2Content.Items.TitanGoldDuringTP, RoR2Content.Items.ArtifactKey, RoR2Content.Items.Pearl, RoR2Content.Items.ShinyPearl };
-
-                foreach (var it in specialDropIds)
-                    if (it != null)
-                        Logger.LogWarning($"{it.itemIndex}:{it.nameToken}");
-
-                foreach (var it in eliteEquipIds)
-                    if (it != null)
-                        Logger.LogWarning($"{it.equipmentIndex}:{it.nameToken}");
 
                 //Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.pickupDef.itemIndex}");
                 self.alive = false;
