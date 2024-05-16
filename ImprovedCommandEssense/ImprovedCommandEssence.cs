@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using EntityStates.Scrapper;
@@ -88,7 +89,7 @@ namespace ImprovedCommandEssence
             onInBazaar = configFile.Bind("ImprovedCommandEssence", "onInBazaar", false, new ConfigDescription("Set if the Command Artifact is turn on in the Bazaar."));
             onInDropShip = configFile.Bind("ImprovedCommandEssence", "onInDropShip", false, new ConfigDescription("Set if the Command Artifact is turn on for Drop Ship items."));
             onForAdaptive = configFile.Bind("ImprovedCommandEssence", "onForAdaptive", false, new ConfigDescription("Set if the Command Artifact is turn on for Adaptive Chest items."));
-            onForPotential = configFile.Bind("ImprovedCommandEssence", "onForAdaptive", false, new ConfigDescription("Set if the Command Artifact is turn on for Void Potentials and Void Caches."));
+            onForPotential = configFile.Bind("ImprovedCommandEssence", "onForPotential", false, new ConfigDescription("Set if the Command Artifact is turn on for Void Potentials and Void Caches."));
             sameBossDrops = configFile.Bind("ImprovedCommandEssence", "sameBossDrops", true, new ConfigDescription("Set if the Command Essences that drop from the Teleporter boss give the same options."));
             onForTrophy = configFile.Bind("ImprovedCommandEssence", "onForTrophy", false, new ConfigDescription("Set if the item dropped by bosses killed via Trophy Hunter's Tricorn drop as a Command Essence (true) or the boss item (false)"));
             enableScrappers = configFile.Bind("ImprovedCommandEssence", "enableScrappers", false, new ConfigDescription("Set if Scrappers spawn"));
@@ -142,6 +143,12 @@ namespace ImprovedCommandEssence
         [Server]
         public void PotentialRoll(On.RoR2.OptionChestBehavior.orig_Roll orig, RoR2.OptionChestBehavior self)
         {
+            if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
+            {
+                orig(self);
+                return;
+            }
+
             if (!NetworkServer.active)
             {
                 Debug.LogWarning("[Server] function 'System.Void RoR2.OptionChestBehavior::Roll()' called on client");
@@ -347,7 +354,9 @@ namespace ImprovedCommandEssence
                 if (self.dropTable)
                 {
                     pickupIndex = self.dropTable.GenerateDrop(self.rng);
-                    list = (from x in (self.dropTable as BasicPickupDropTable).selector.choices where x.value.pickupDef.itemTier != ItemTier.Boss select x.value).ToList();
+                    list = (from x in (self.dropTable as BasicPickupDropTable).selector.choices where x.value.pickupDef.itemTier == pickupIndex.pickupDef.itemTier select x.value).ToList();
+                    var debug = JsonUtility.ToJson(self.dropTable);
+                    Debug.Log(debug);
                 }
                 else
                 {
@@ -372,7 +381,8 @@ namespace ImprovedCommandEssence
                 Vector3 vector = Quaternion.AngleAxis((float)UnityEngine.Random.Range(0, 360), Vector3.up) * (Vector3.up * 40f + Vector3.forward * 5f);
                 Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.up);
 
-                if (self.bossDrops.Any(x => (int)x.pickupDef.itemIndex == 171))
+
+                if (self.bossDrops.Any(x => x.pickupDef.itemIndex == RoR2Content.Items.TitanGoldDuringTP.itemIndex))
                 {
                     var track = new TrackBehaviour();
                     track.PickupSource = PickupSource.Boss;
@@ -766,8 +776,11 @@ namespace ImprovedCommandEssence
                         available = Run.instance.IsPickupAvailable(index),
                         pickupIndex = index
                     };
+                    Debug.Log($"[ICE] Option[{i}]: {index.pickupDef.internalName}");
                 }
             }
+
+
             self.SetOptionsServer(options);
         }
 
