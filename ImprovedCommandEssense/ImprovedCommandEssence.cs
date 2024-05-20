@@ -44,8 +44,9 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<bool> enableMultishops { get; set; }
         public static ConfigEntry<bool> scrappersDropEssence { get; set; }
         public static ConfigEntry<int> essenceChance { get; set; }
+        public static ConfigEntry<string> customCompatibility { get; set; }
         
-        List<string> zetAspectItem = new List<string>() { "ItemIndex.ZetAspectWhite", "ItemIndex.ZetAspectBlue", "ItemIndex.ZetAspectRed", "ItemIndex.ZetAspectHaunted", "ItemIndex.ZetAspectPoison", "ItemIndex.ZetAspectLunar", "ItemIndex.ZetAspectEarth", "ItemIndex.ZetAspectVoid", "ItemIndex.ZetAspectSanguine" };
+        List<string> crossModCompatibility = new List<string>() { "ItemIndex.idRelicOfEnergy", "ItemIndex.idSagesBook", "ItemIndex.ZetAspectWhite", "ItemIndex.ZetAspectBlue", "ItemIndex.ZetAspectRed", "ItemIndex.ZetAspectHaunted", "ItemIndex.ZetAspectPoison", "ItemIndex.ZetAspectLunar", "ItemIndex.ZetAspectEarth", "ItemIndex.ZetAspectVoid", "ItemIndex.ZetAspectSanguine" };
 
         void ConfigOnSettingChanged(object sender, SettingChangedEventArgs e)
         {
@@ -96,6 +97,7 @@ namespace ImprovedCommandEssence
             enablePrinters = configFile.Bind("ImprovedCommandEssence", "enablePrinters", false, new ConfigDescription("Set if Printers spawn (onInDropShip must be on to drop as the item)"));
             enableMultishops = configFile.Bind("ImprovedCommandEssence", "enableTerminals", false, new ConfigDescription("Set if Multishops spawn (onInDropShip must be on to drop as the item)"));
             scrappersDropEssence = configFile.Bind("ImprovedCommandEssence", "scrappersDropEssence", false, new ConfigDescription("Set if Scrappers drop scrap (false) or Command Essence (true)"));
+            customCompatibility = configFile.Bind("ImprovedCommandEssence", "customCompatibility", "", new ConfigDescription("Add item names to make them drop as the item not an essence (Can be used to force compatability for other mods with set drops ie. 'ItemIndex.idSagesBook')(comma seperated)"));
 
             RoR2Application.onLoad += InitExclude;
             
@@ -134,7 +136,7 @@ namespace ImprovedCommandEssence
         List<ItemDef> specialDropIds = new List<ItemDef>();
         private void InitExclude()
         {
-            
+            crossModCompatibility.AddRange(customCompatibility.Value.Split(','));
             eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite };
             specialDropIds = new List<ItemDef>() { RoR2Content.Items.TitanGoldDuringTP, RoR2Content.Items.ArtifactKey, RoR2Content.Items.Pearl, RoR2Content.Items.ShinyPearl };
 
@@ -355,8 +357,6 @@ namespace ImprovedCommandEssence
                 {
                     pickupIndex = self.dropTable.GenerateDrop(self.rng);
                     list = (from x in (self.dropTable as BasicPickupDropTable).selector.choices where x.value.pickupDef.itemTier == pickupIndex.pickupDef.itemTier select x.value).ToList();
-                    var debug = JsonUtility.ToJson(self.dropTable);
-                    Debug.Log(debug);
                 }
                 else
                 {
@@ -655,7 +655,7 @@ namespace ImprovedCommandEssence
                     (self.pickupIndex.pickupDef == null || (self.pickupIndex.pickupDef.itemIndex == ItemIndex.None && self.pickupIndex.pickupDef.equipmentIndex == EquipmentIndex.None && self.pickupIndex.pickupDef.itemTier == ItemTier.NoTier)) ||
                     (eliteEquipIds.Any(x => x.equipmentIndex == self.pickupIndex.pickupDef.equipmentIndex)) ||
                     (specialDropIds.Any(x => x.itemIndex == self.pickupIndex.pickupDef.itemIndex)) ||
-                    (zetAspectItem.Contains(self.pickupIndex.ToString())))
+                    (crossModCompatibility.Contains(self.pickupIndex.ToString())))
                         GenericPickupController.CreatePickup(self.createPickupInfo);
                 else
                     OnDropletHitGroundServer(ref self.createPickupInfo, ref flag, track);
