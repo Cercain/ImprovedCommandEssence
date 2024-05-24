@@ -1,3 +1,6 @@
+# Now with fixed Compatibility for StarStorm 2 & Forgotten Relics
+(+more - read 1.3.4 notes)
+
 ## Why?
 
 The Command Artifact is too strong, but having better control over your build is fun.
@@ -39,24 +42,47 @@ The default values are how I like to play, change these up to fit your playstyle
 #### Toggle Options
 | Name             |    default      | Description |
 |----------|:-------------:|------------|
-| keepCategory   |  true | If true Category Chests will only contain options of the same category |
-| onInBazaar   |  false | If false item drops in the Bazaar will drop as the actual item not a Command Essence |
-| onInDropShip |  false  | If false item drops from terminals (like the Drop Ship) will drop as the actual item not a Command Essence |
-| sameBossDrops | true | If true the Command Essences dropped from the teleporter boss of the same rarity will contain the same options |
-| onForTrophy | false | If false bosses killed with the Trophy Hunter's Tricorn will drop the related item and not a Command Essence |
+| keepCategory   |  true | If true, Category Chests will only contain options of the same category |
+| onInBazaar   |  false | If false, item drops in the Bazaar will drop as the actual item not a Command Essence |
+| onInDropShip* |  false  | If false, item drops from terminals (like the Drop Ship) will drop as the actual item not a Command Essence |
+| onForHidden |  true  | (When 'onInDropShip' is false) If true, hidden (?) item drops from terminals will drop as a Command Essence |
+| sameBossDrops | true | If true, the Command Essences dropped from the teleporter boss of the same rarity will contain the same options |
+| onForTrophy | false | If false, bosses killed with the Trophy Hunter's Tricorn will drop the related item and not a Command Essence |
 | onForAdaptive | false | Set if Adaptive Chests drop their items (false) or Command Essence (true) |
 | onForPotential | false | Set if Void Cache and Void Triples drop a Void Potential (false) Command Essence (true) |
 | enableScrappers | false | Set if Scrappers spawn |
 | enablePrinters | false | Set if Printers spawn (onInDropShip must be on to drop as the item) |
 | enableMultishop | false | Set if Multishops spawn (onInDropShip must be on to drop as the item) |
-| scrappersDropEssence | false | Set if Scrappers drop scrap (false) or Command Essence (true) |
-| essenceChance | 100 | Set the chance for chests to drop Command Essences (0-100) |
+| scrappersDropEssence | false | Set if Scrappers drop scrap (false) or a Command Essence (true) |
+| essenceChance | 100 | Set the chance for items to drop as Command Essences (0-100) |
 
-(Note that Category chests are bugged in v1.2.2.0 and will only contain item with ONLY the same tag. Use https://thunderstore.io/package/Cercain/FixedCategoryChests/ to fix this)<br/>
-(By default the only Terminal Shops that spawn in Command runs are Drop Ships but this toggle affects all of them)
+*(By default the only Terminal Shops that spawn in Command runs are Drop Ships but this toggle affects all of them)
 
+#### Compatibility
+| Name             |    default      | Description |
+|----------|:-------------:|------------|
+| customCompatibility  | empty | Add items to exclude them from dropping as Command Essences, use commas to seperate entries, ie: "ItemIndex.ZetAspectWhite, ItemIndex.ZetAspectBlue, ItemIndex.ZetAspectRed" |
 
 ## Changelog
+
+**1.3.5**
+
+* (Feature) Added 'onForHidden' which makes the items that display as a ? in terminals drop as a Command Essence (affected by 'essenceChance')
+* Reworded some config description to better describe their use
+
+**1.3.4**
+
+* (Compatibility Fix) Forgotten Relics - special item(s) now drop as the item not an essence
+* (Feature) Added a new configuration to add custom compatibility to drop any item as the item (see above)
+
+**1.3.3**
+
+* (Compatibility Fix) Fixed 'sameBossDrops' and Starstorm 2 adding white boxes to the drop pool
+* (Bug Fix) Fixed 'onForPotential' not being configuration and also affecting non-command runs
+
+**1.3.2**
+
+* (Bug Fix) Void Potentials correctly drop from Simulacrum when enabled
 
 **1.3.1**
 
@@ -70,7 +96,7 @@ The default values are how I like to play, change these up to fit your playstyle
 
 **1.2.1**
 
-* (Compatability Fix) Fixed the exclusion list to be compatible with mods that add new items
+* (Compatibility Fix) Fixed the exclusion list to be compatible with mods that add new items
 
 **1.2.0**
 
@@ -91,7 +117,7 @@ The default values are how I like to play, change these up to fit your playstyle
 
 **1.1.2**
 
-* (Compatability Fix) ZetAspects now works with the Item drop mode
+* (Compatibility Fix) ZetAspects now works with the Item drop mode
 
 **1.1.1**
 
@@ -111,7 +137,7 @@ The default values are how I like to play, change these up to fit your playstyle
 
 * Initial Release
 
-## Known Bugs & Compatability Issues
+## Known Bugs & Compatibility Issues
 
 * [Current Issues List](https://github.com/Cercain/ImprovedCommandEssence/issues)
 

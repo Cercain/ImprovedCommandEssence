@@ -35,6 +35,7 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<bool> keepCategory { get; set; }
         public static ConfigEntry<bool> onInBazaar { get; set; }
         public static ConfigEntry<bool> onInDropShip { get; set; }
+        public static ConfigEntry<bool> onForHidden { get; set; }
         public static ConfigEntry<bool> onForAdaptive { get; set; }
         public static ConfigEntry<bool> onForPotential { get; set; }
         public static ConfigEntry<bool> sameBossDrops { get; set; }
@@ -89,6 +90,7 @@ namespace ImprovedCommandEssence
             keepCategory = configFile.Bind("ImprovedCommandEssence", "keepCategory", true, new ConfigDescription("Set if category chests only show items of the corresponding category."));
             onInBazaar = configFile.Bind("ImprovedCommandEssence", "onInBazaar", false, new ConfigDescription("Set if the Command Artifact is turn on in the Bazaar."));
             onInDropShip = configFile.Bind("ImprovedCommandEssence", "onInDropShip", false, new ConfigDescription("Set if the Command Artifact is turn on for Drop Ship items."));
+            onForHidden = configFile.Bind("ImprovedCommandEssence", "onForHidden", true, new ConfigDescription("When 'onInDropShip' is false, set if hidden (?) items drop as a Command Essence or the hidden item."));
             onForAdaptive = configFile.Bind("ImprovedCommandEssence", "onForAdaptive", false, new ConfigDescription("Set if the Command Artifact is turn on for Adaptive Chest items."));
             onForPotential = configFile.Bind("ImprovedCommandEssence", "onForPotential", false, new ConfigDescription("Set if the Command Artifact is turn on for Void Potentials and Void Caches."));
             sameBossDrops = configFile.Bind("ImprovedCommandEssence", "sameBossDrops", true, new ConfigDescription("Set if the Command Essences that drop from the Teleporter boss give the same options."));
@@ -586,7 +588,13 @@ namespace ImprovedCommandEssence
                 Debug.LogWarning("[Server] function 'System.Void RoR2.ShopTerminalBehavior::DropPickup()' called on client");
                 return;
             }
-            var track = new TrackBehaviour() { PickupSource = PickupSource.Terminal };
+
+            TrackBehaviour track = new TrackBehaviour();
+
+            if (onForHidden.Value && !self.hidden)
+            {
+                track.PickupSource = PickupSource.Terminal;
+            }
             self.SetHasBeenPurchased(true);
             CreatePickupDroplet(self.pickupIndex, (self.dropTransform ? self.dropTransform : self.transform).position, self.transform.TransformVector(self.dropVelocity), track);
 
