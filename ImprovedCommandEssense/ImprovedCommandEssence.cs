@@ -38,6 +38,7 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<bool> onForHidden { get; set; }
         public static ConfigEntry<bool> onForAdaptive { get; set; }
         public static ConfigEntry<bool> onForPotential { get; set; }
+        public static ConfigEntry<bool> onForDelusion { get; set; }
         public static ConfigEntry<bool> sameBossDrops { get; set; }
         public static ConfigEntry<bool> onForTrophy { get; set; }
         public static ConfigEntry<bool> enableScrappers { get; set; }
@@ -93,6 +94,7 @@ namespace ImprovedCommandEssence
             onForHidden = configFile.Bind("ImprovedCommandEssence", "onForHidden", true, new ConfigDescription("When 'onInDropShip' is false, set if hidden (?) items drop as a Command Essence or the hidden item."));
             onForAdaptive = configFile.Bind("ImprovedCommandEssence", "onForAdaptive", false, new ConfigDescription("Set if the Command Artifact is turn on for Adaptive Chest items."));
             onForPotential = configFile.Bind("ImprovedCommandEssence", "onForPotential", false, new ConfigDescription("Set if the Command Artifact is turn on for Void Potentials and Void Caches."));
+            onForDelusion = configFile.Bind("ImprovedCommandEssence", "onForDelusion", false, new ConfigDescription("Set if the items dropped by the Delusion artifact drop as their item or a Command Essence."));
             sameBossDrops = configFile.Bind("ImprovedCommandEssence", "sameBossDrops", true, new ConfigDescription("Set if the Command Essences that drop from the Teleporter boss give the same options."));
             onForTrophy = configFile.Bind("ImprovedCommandEssence", "onForTrophy", false, new ConfigDescription("Set if the item dropped by bosses killed via Trophy Hunter's Tricorn drop as a Command Essence (true) or the boss item (false)"));
             enableScrappers = configFile.Bind("ImprovedCommandEssence", "enableScrappers", false, new ConfigDescription("Set if Scrappers spawn"));
@@ -106,7 +108,7 @@ namespace ImprovedCommandEssence
             Config.SettingChanged += ConfigOnSettingChanged;
             On.RoR2.PickupPickerController.SetOptionsFromPickupForCommandArtifact += SetOptions;
 
-            On.RoR2.ChestBehavior.ItemDrop += ItemDrop;
+            On.RoR2.ChestBehavior.BaseItemDrop += BaseItemDrop;
             On.RoR2.PickupDropletController.OnCollisionEnter += DropletCollisionEnter;
 
             if (!onInDropShip.Value)
@@ -191,8 +193,8 @@ namespace ImprovedCommandEssence
                 prefabOverride = self.pickupPrefab,
                 position = self.dropTransform.position,
                 rotation = Quaternion.identity,
-                pickupIndex = PickupCatalog.FindPickupIndex(self.displayTier)
-            }, self.dropTransform.position, Vector3.up * self.dropUpVelocityStrength + self.dropTransform.forward * self.dropForwardVelocityStrength,
+                pickupIndex = PickupCatalog.FindPickupIndex(self.displayTier),
+            }, Vector3.up * self.dropUpVelocityStrength + self.dropTransform.forward * self.dropForwardVelocityStrength,
             track);
             self.generatedDrops = null;
         }
@@ -542,7 +544,7 @@ namespace ImprovedCommandEssence
         }
 
         [Server]
-        void ItemDrop(On.RoR2.ChestBehavior.orig_ItemDrop orig, RoR2.ChestBehavior self)
+        public void BaseItemDrop(On.RoR2.ChestBehavior.orig_BaseItemDrop orig, RoR2.ChestBehavior self)
         {
             if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
             {
@@ -567,7 +569,13 @@ namespace ImprovedCommandEssence
 
             for (int i = 0; i < self.dropCount; i++)
             {
-                CreatePickupDroplet(self.dropPickup, self.dropTransform.position + Vector3.up * 1.5f, vector, track);
+                CreatePickupDroplet(new GenericPickupController.CreatePickupInfo
+                {
+                    pickupIndex = self.dropPickup,
+                    position = self.dropTransform.position + Vector3.up * 1.5f,
+                    chest = self,
+                    artifactFlag = (self.isCommandChest ? GenericPickupController.PickupArtifactFlag.COMMAND : GenericPickupController.PickupArtifactFlag.NONE)
+                }, vector, track);
                 vector = rotation * vector;
                 //self.Roll();
             }
@@ -605,13 +613,18 @@ namespace ImprovedCommandEssence
             CreatePickupDroplet(new GenericPickupController.CreatePickupInfo
             {
                 rotation = Quaternion.identity,
+                position = position,
                 pickupIndex = pickupIndex
-            }, position, velocity, track);
+            }, velocity, track);
         }
 
-        public void CreatePickupDroplet(GenericPickupController.CreatePickupInfo pickupInfo, Vector3 position, Vector3 velocity, TrackBehaviour track)
+        public void CreatePickupDroplet(GenericPickupController.CreatePickupInfo pickupInfo,  Vector3 velocity, TrackBehaviour track)
         {
-            GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(PickupDropletController.pickupDropletPrefab, position, Quaternion.identity);
+            if (CommandArtifactManager.IsCommandArtifactEnabled)
+            {
+                pickupInfo.artifactFlag |= GenericPickupController.PickupArtifactFlag.COMMAND;
+            }
+            GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(PickupDropletController.pickupDropletPrefab, pickupInfo.position, Quaternion.identity);
             PickupDropletController component = gameObject.GetComponent<PickupDropletController>();
             var behav = gameObject.AddComponent<TrackBehaviour>();
 
@@ -653,8 +666,9 @@ namespace ImprovedCommandEssence
 
                 bool doChance = UnityEngine.Random.Range(0, 100f) < essenceChance.Value;
                 
-
-                if (!doChance || (!onInBazaar.Value && BazaarController.instance != null) ||
+                if (!doChance || 
+                    (!onForDelusion.Value && self.createPickupInfo.artifactFlag.HasFlag(GenericPickupController.PickupArtifactFlag.DELUSION)) ||
+                    (!onInBazaar.Value && BazaarController.instance != null) ||
                     (!scrappersDropEssence.Value && trackBool && track.PickupSource == PickupSource.Scrapper ) ||
                     (!onForAdaptive.Value && trackBool && track.PickupSource == PickupSource.Roulette) ||
                     (!onInDropShip.Value && trackBool && track.PickupSource == PickupSource.Terminal) ||
@@ -666,13 +680,13 @@ namespace ImprovedCommandEssence
                     (crossModCompatibility.Contains(self.pickupIndex.ToString())))
                         GenericPickupController.CreatePickup(self.createPickupInfo);
                 else
-                    OnDropletHitGroundServer(ref self.createPickupInfo, ref flag, track);
+                    CreateCommandCube(ref self.createPickupInfo, ref flag, track);
 
                 UnityEngine.Object.Destroy(self.gameObject);
             }
         }
 
-        private void OnDropletHitGroundServer(ref GenericPickupController.CreatePickupInfo createPickupInfo, ref bool shouldSpawn, TrackBehaviour trackBehaviour = null)
+        private void CreateCommandCube(ref GenericPickupController.CreatePickupInfo createPickupInfo, ref bool shouldSpawn, TrackBehaviour trackBehaviour = null)
         {
             PickupIndex pickupIndex = createPickupInfo.pickupIndex;
             PickupDef pickupDef = PickupCatalog.GetPickupDef(pickupIndex);
@@ -692,8 +706,10 @@ namespace ImprovedCommandEssence
                 track.Options = trackBehaviour.Options;
             }
             gameObject.GetComponent<PickupIndexNetworker>().NetworkpickupIndex = pickupIndex;
-            gameObject.GetComponent<PickupPickerController>().SetOptionsFromPickupForCommandArtifact(pickupIndex);
-            
+            PickupPickerController component = gameObject.GetComponent<PickupPickerController>();
+            component.SetOptionsFromPickupForCommandArtifact(pickupIndex);
+            component.chestGeneratedFrom = createPickupInfo.chest;
+
             NetworkServer.Spawn(gameObject);
             shouldSpawn = false;
         }
@@ -784,7 +800,6 @@ namespace ImprovedCommandEssence
                         available = Run.instance.IsPickupAvailable(index),
                         pickupIndex = index
                     };
-                    Debug.Log($"[ICE] Option[{i}]: {index.pickupDef.internalName}");
                 }
             }
 

@@ -1,8 +1,8 @@
 ﻿{
 	"name": "ImprovedCommandEssence",
-	"version_number": "1.3.5",
+	"version_number": "1.3.6",
 	"website_url": "https://github.com/Cercain/ImprovedCommandEssence",
-	"description": "Balances the Command Artifact to only show a smaller selection of options plus additional QOL [HIGH CONFIGURABILITY]",
+	"description": "Balances the Command Artifact to only show a smaller selection of options plus additional QOL [HIGH CONFIGURABILITY][Devotion Update Fix]",
 	"dependencies": [
 		"bbepis-BepInExPack-5.4.1903",
 		"RiskofThunder-HookGenPatcher-1.2.3"

@@ -50,6 +50,7 @@ The default values are how I like to play, change these up to fit your playstyle
 | onForTrophy | false | If false, bosses killed with the Trophy Hunter's Tricorn will drop the related item and not a Command Essence |
 | onForAdaptive | false | Set if Adaptive Chests drop their items (false) or Command Essence (true) |
 | onForPotential | false | Set if Void Cache and Void Triples drop a Void Potential (false) Command Essence (true) |
+| onForDelusion | false | Set if the items dropped by the Delusion artifact drop as their item or a Command Essence |
 | enableScrappers | false | Set if Scrappers spawn |
 | enablePrinters | false | Set if Printers spawn (onInDropShip must be on to drop as the item) |
 | enableMultishop | false | Set if Multishops spawn (onInDropShip must be on to drop as the item) |
@@ -64,6 +65,11 @@ The default values are how I like to play, change these up to fit your playstyle
 | customCompatibility  | empty | Add items to exclude them from dropping as Command Essences, use commas to seperate entries, ie: "ItemIndex.ZetAspectWhite, ItemIndex.ZetAspectBlue, ItemIndex.ZetAspectRed" |
 
 ## Changelog
+
+**1.3.6**
+
+* (Bug Fix) Now works with delusion
+* (Feature) Added 'onForDelusion' to have delusion drops drop as an essence when true.
 
 **1.3.5**
 
@@ -146,4 +152,4 @@ The default values are how I like to play, change these up to fit your playstyle
 
 ## Contact for bugs and suggestions
 
-Lilly.Varous#7620 on Discord
+Contact through GitHub Issues page to raie bugs and suggestions
