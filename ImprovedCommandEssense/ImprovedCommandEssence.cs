@@ -6,10 +6,12 @@ using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using EntityStates.Scrapper;
+using R2API.Utils;
 using RoR2;
 using RoR2.Artifacts;
 using UnityEngine;
 using UnityEngine.Networking;
+using static Rewired.InputMapper;
 
 namespace ImprovedCommandEssence
 {
@@ -29,6 +31,7 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<int> itemAmountLunar { get; set; }
         public static ConfigEntry<int> itemAmountVoid { get; set; }
         public static ConfigEntry<int> itemAmountEquip { get; set; }
+        //public static ConfigEntry<int> itemAmountAspect { get; set; }
         public static ConfigEntry<int> itemAmountPotential { get; set; }
         public static ConfigEntry<int> itemAmountPotentialCache { get; set; }
         public static ConfigEntry<int> itemAmountBoss { get; set; }
@@ -37,8 +40,10 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<bool> onInDropShip { get; set; }
         public static ConfigEntry<bool> onForHidden { get; set; }
         public static ConfigEntry<bool> onForAdaptive { get; set; }
+        public static ConfigEntry<bool> onForYellowBossDrops { get; set; }
         public static ConfigEntry<bool> onForPotential { get; set; }
         public static ConfigEntry<bool> onForDelusion { get; set; }
+        //public static ConfigEntry<bool> onForAspect { get; set; }
         public static ConfigEntry<bool> sameBossDrops { get; set; }
         public static ConfigEntry<bool> onForTrophy { get; set; }
         public static ConfigEntry<bool> enableScrappers { get; set; }
@@ -47,8 +52,6 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<bool> scrappersDropEssence { get; set; }
         public static ConfigEntry<int> essenceChance { get; set; }
         public static ConfigEntry<string> customCompatibility { get; set; }
-        
-        List<string> crossModCompatibility = new List<string>() { "ItemIndex.idRelicOfEnergy", "ItemIndex.idSagesBook", "ItemIndex.ZetAspectWhite", "ItemIndex.ZetAspectBlue", "ItemIndex.ZetAspectRed", "ItemIndex.ZetAspectHaunted", "ItemIndex.ZetAspectPoison", "ItemIndex.ZetAspectLunar", "ItemIndex.ZetAspectEarth", "ItemIndex.ZetAspectVoid", "ItemIndex.ZetAspectSanguine" };
 
         void ConfigOnSettingChanged(object sender, SettingChangedEventArgs e)
         {
@@ -78,13 +81,14 @@ namespace ImprovedCommandEssence
 
         public void OnEnable()
         {
-            itemAmountCommon = configFile.Bind("ImprovedCommandEssence", "itemAmountCommon", 6, new ConfigDescription("Set the amount of Common (white) options shown when opening a Command Essences."));
-            itemAmountUncommon = configFile.Bind("ImprovedCommandEssence", "itemAmountUncommon", 4, new ConfigDescription("Set the amount of Uncommon (Green) options shown when opening a Command Essences."));
-            itemAmountLegendary = configFile.Bind("ImprovedCommandEssence", "itemAmountLegendary", 2, new ConfigDescription("Set the amount of Legendary (Yellow) options shown when opening a Command Essences."));
-            itemAmountBoss = configFile.Bind("ImprovedCommandEssence", "itemAmountBoss", 2, new ConfigDescription("Set the amount of Yellow items shown when opening a Command Essences."));
-            itemAmountLunar = configFile.Bind("ImprovedCommandEssence", "itemAmountLunar", 2, new ConfigDescription("Set the amount of Blue items shown when opening a Command Essences."));
-            itemAmountVoid = configFile.Bind("ImprovedCommandEssence", "itemAmountVoid", 2, new ConfigDescription("Set the amount of Blue items shown when opening a Command Essences."));
-            itemAmountEquip = configFile.Bind("ImprovedCommandEssence", "itemAmountEquip", 4, new ConfigDescription("Set the amount of Orange items shown when opening a Command Essences."));
+            itemAmountCommon = configFile.Bind("ImprovedCommandEssence", "itemAmountCommon", 6, new ConfigDescription("Set the amount of Common (white) options shown when opening White Command Essences."));
+            itemAmountUncommon = configFile.Bind("ImprovedCommandEssence", "itemAmountUncommon", 4, new ConfigDescription("Set the amount of Uncommon (Green) options shown when opening Green Command Essences."));
+            itemAmountLegendary = configFile.Bind("ImprovedCommandEssence", "itemAmountLegendary", 2, new ConfigDescription("Set the amount of Legendary (Red) options shown when opening Red Command Essences."));
+            itemAmountBoss = configFile.Bind("ImprovedCommandEssence", "itemAmountBoss", 2, new ConfigDescription("Set the amount of Boss (Yellow) items shown when opening Yellow Command Essences with 'onForYellowBossDrops' set to true."));
+            itemAmountLunar = configFile.Bind("ImprovedCommandEssence", "itemAmountLunar", 2, new ConfigDescription("Set the amount of Blue items shown when opening Lunar Command Essences."));
+            itemAmountVoid = configFile.Bind("ImprovedCommandEssence", "itemAmountVoid", 2, new ConfigDescription("Set the amount of Blue items shown when opening Void Command Essences."));
+            itemAmountEquip = configFile.Bind("ImprovedCommandEssence", "itemAmountEquip", 4, new ConfigDescription("Set the amount of Orange items shown when opening Equiptment Command Essences."));
+            //itemAmountAspect = configFile.Bind("ImprovedCommandEssence", "itemAmountAspect", 2, new ConfigDescription("Set the amount of Aspect items shown when opening Aspect Command Essences."));
             itemAmountPotential = configFile.Bind("ImprovedCommandEssence", "itemAmountPotential", 6, new ConfigDescription("Set the amount of items shown when opening a Void Potential from a Void Cache."));
             itemAmountPotentialCache = configFile.Bind("ImprovedCommandEssence", "itemAmountPotentialCache", 4, new ConfigDescription("Set the amount of items shown when opening a Void Potential from a Void Triple."));
             essenceChance = configFile.Bind("ImprovedCommandEssence", "essenceChance", 100, new ConfigDescription("Set the chance for item drops to drop as a Command Essence (0-100) from non-explicit chests"));
@@ -92,33 +96,30 @@ namespace ImprovedCommandEssence
             onInBazaar = configFile.Bind("ImprovedCommandEssence", "onInBazaar", false, new ConfigDescription("Set if the Command Artifact is turn on in the Bazaar."));
             onInDropShip = configFile.Bind("ImprovedCommandEssence", "onInDropShip", false, new ConfigDescription("Set if the Command Artifact is turn on for Drop Ship items."));
             onForHidden = configFile.Bind("ImprovedCommandEssence", "onForHidden", true, new ConfigDescription("When 'onInDropShip' is false, set if hidden (?) items drop as a Command Essence or the hidden item."));
-            onForAdaptive = configFile.Bind("ImprovedCommandEssence", "onForAdaptive", false, new ConfigDescription("Set if the Command Artifact is turn on for Adaptive Chest items."));
+            onForAdaptive = configFile.Bind("ImprovedCommandEssence", "onForAdaptive", false, new ConfigDescription("Set if Adaptive Chests will drop a Command Essense (true) or their item (false)."));
+            onForYellowBossDrops = configFile.Bind("ImprovedCommandEssence", "onForYellowBossDrops", true, new ConfigDescription("Set if boss items dropped by the teleporter event will drop a Command Essence (true) or their item (false)."));
             onForPotential = configFile.Bind("ImprovedCommandEssence", "onForPotential", false, new ConfigDescription("Set if the Command Artifact is turn on for Void Potentials and Void Caches."));
             onForDelusion = configFile.Bind("ImprovedCommandEssence", "onForDelusion", false, new ConfigDescription("Set if the items dropped by the Delusion artifact drop as their item or a Command Essence."));
+            //onForAspect = configFile.Bind("ImprovedCommandEssence", "onForAspect", false, new ConfigDescription("Set if the Aspects dropped by Elites drop as their item or a Command Essence."));
             sameBossDrops = configFile.Bind("ImprovedCommandEssence", "sameBossDrops", true, new ConfigDescription("Set if the Command Essences that drop from the Teleporter boss give the same options."));
             onForTrophy = configFile.Bind("ImprovedCommandEssence", "onForTrophy", false, new ConfigDescription("Set if the item dropped by bosses killed via Trophy Hunter's Tricorn drop as a Command Essence (true) or the boss item (false)"));
             enableScrappers = configFile.Bind("ImprovedCommandEssence", "enableScrappers", false, new ConfigDescription("Set if Scrappers spawn"));
             enablePrinters = configFile.Bind("ImprovedCommandEssence", "enablePrinters", false, new ConfigDescription("Set if Printers spawn (onInDropShip must be on to drop as the item)"));
             enableMultishops = configFile.Bind("ImprovedCommandEssence", "enableTerminals", false, new ConfigDescription("Set if Multishops spawn (onInDropShip must be on to drop as the item)"));
             scrappersDropEssence = configFile.Bind("ImprovedCommandEssence", "scrappersDropEssence", false, new ConfigDescription("Set if Scrappers drop scrap (false) or Command Essence (true)"));
-            customCompatibility = configFile.Bind("ImprovedCommandEssence", "customCompatibility", "", new ConfigDescription("Add item names to make them drop as the item not an essence (Can be used to force compatability for other mods with set drops ie. 'ItemIndex.idSagesBook')(comma seperated)"));
 
-            RoR2Application.onLoad += InitExclude;
-            
             Config.SettingChanged += ConfigOnSettingChanged;
             On.RoR2.PickupPickerController.SetOptionsFromPickupForCommandArtifact += SetOptions;
 
             On.RoR2.ChestBehavior.BaseItemDrop += BaseItemDrop;
             On.RoR2.PickupDropletController.OnCollisionEnter += DropletCollisionEnter;
+            On.RoR2.BossGroup.DropRewards += BossGroupDropRewards;
 
             if (!onInDropShip.Value)
                 On.RoR2.ShopTerminalBehavior.DropPickup += TerminalDrop;
 
             if (!onForAdaptive.Value)
                 On.RoR2.RouletteChestController.EjectPickupServer += RouletteEject;
-
-            if (sameBossDrops.Value)
-                On.RoR2.BossGroup.DropRewards += BossDropRewards;
 
             if (!onForTrophy.Value)
                 On.RoR2.EquipmentSlot.FireBossHunter += BossHunterDrop;
@@ -135,16 +136,7 @@ namespace ImprovedCommandEssence
                 On.RoR2.OptionChestBehavior.Roll += PotentialRoll;
             }
         }
-
-        List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>();
-        List<ItemDef> specialDropIds = new List<ItemDef>();
-        private void InitExclude()
-        {
-            crossModCompatibility.AddRange(customCompatibility.Value.Split(','));
-            eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite };
-            specialDropIds = new List<ItemDef>() { RoR2Content.Items.TitanGoldDuringTP, RoR2Content.Items.ArtifactKey, RoR2Content.Items.Pearl, RoR2Content.Items.ShinyPearl };
-
-        }
+        
 
         [Server]
         public void PotentialRoll(On.RoR2.OptionChestBehavior.orig_Roll orig, RoR2.OptionChestBehavior self)
@@ -343,99 +335,119 @@ namespace ImprovedCommandEssence
             return false;
         }
 
-        private void BossDropRewards(On.RoR2.BossGroup.orig_DropRewards orig, RoR2.BossGroup self)
+        private void BossGroupDropRewards(On.RoR2.BossGroup.orig_DropRewards orig, RoR2.BossGroup self)
         {
             if (!RunArtifactManager.instance.IsArtifactEnabled(RoR2Content.Artifacts.commandArtifactDef))
             {
                 orig(self);
                 return;
             }
+            if (!Run.instance)
+            {
+                Debug.LogError("No valid run instance!");
+                return;
+            }
+            if (self.rng == null)
+            {
+                Debug.LogError("RNG is null!");
+                return;
+            }
 
             int participatingPlayerCount = Run.instance.participatingPlayerCount;
-            if (participatingPlayerCount != 0 && self.dropPosition)
+            if (participatingPlayerCount != 0)
             {
-                List<PickupIndex> list;
-                PickupIndex pickupIndex = PickupIndex.none;
-
-                if (self.dropTable)
+                if (self.dropPosition)
                 {
-                    pickupIndex = self.dropTable.GenerateDrop(self.rng);
-                    list = (from x in (self.dropTable as BasicPickupDropTable).selector.choices where x.value.pickupDef.itemTier == pickupIndex.pickupDef.itemTier select x.value).ToList();
-                }
-                else
-                {
-                    list = Run.instance.availableTier2DropList;
-                    if (self.forceTier3Reward)
+                    PickupPickerController.Option[] options;
+                    PickupIndex pickupIndex = PickupIndex.none;
+                    if (self.dropTable)
                     {
-                        list = Run.instance.availableTier3DropList;
+                        pickupIndex = self.dropTable.GenerateDrop(self.rng);
+                        options = PickupPickerController.GetOptionsFromPickupIndex(pickupIndex);
                     }
-                    pickupIndex = self.rng.NextElementUniform<PickupIndex>(list);
-                }
-
-                int itemAmount = GetItemAmountFromTier(list.First().pickupDef);
-
-                List<PickupIndex> indexList = (from x in list orderby self.rng.Next() select x).Take(itemAmount).ToList();
-
-                int num = 1 + self.bonusRewardCount;
-                if (self.scaleRewardsByPlayerCount)
-                {
-                    num *= participatingPlayerCount;
-                }
-                float angle = 360f / (float)num;
-                Vector3 vector = Quaternion.AngleAxis((float)UnityEngine.Random.Range(0, 360), Vector3.up) * (Vector3.up * 40f + Vector3.forward * 5f);
-                Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.up);
-
-
-                if (self.bossDrops.Any(x => x.pickupDef.itemIndex == RoR2Content.Items.TitanGoldDuringTP.itemIndex))
-                {
-                    var track = new TrackBehaviour();
-                    track.PickupSource = PickupSource.Boss;
-                    track.ItemTag = ItemTag.Any;
-
-                    CreatePickupDroplet(self.bossDrops.First(), self.dropPosition.position, vector, track);
-                }
-
-                var bossIndexList = (from x in Run.instance.availableBossDropList orderby self.rng.Next() select x).Take(itemAmountBoss.Value).ToList();
-
-                PickupIndex pickupIndex2 = pickupIndex;
-                int i = 0;
-                while (i < num)
-                {
-                    if ((self.bossDrops.Count > 0 || self.bossDropTables.Count > 0) && self.rng.nextNormalizedFloat <= self.bossDropChance)
+                    else
                     {
-                        if (self.bossDropTables.Count > 0)
+                        var list = Run.instance.availableTier2DropList;
+                        if (self.forceTier3Reward)
                         {
-                            pickupIndex2 = self.rng.NextElementUniform<PickupDropTable>(self.bossDropTables).GenerateDrop(self.rng);
+                            list = Run.instance.availableTier3DropList;
                         }
-                        else
-                        {
-                            pickupIndex2 = self.rng.NextElementUniform<PickupIndex>(self.bossDrops);
-                        }
-
-                        indexList = bossIndexList;
+                        pickupIndex = self.rng.NextElementUniform<PickupIndex>(list);
+                        options = PickupPickerController.GetOptionsFromPickupIndex(pickupIndex);
                     }
 
-                    var options = new PickupPickerController.Option[indexList.Count];
+                    int itemAmount = GetItemAmountFromTier(options[0].pickupIndex.pickupDef);
+                    options = (from x in options.ToList() orderby self.rng.Next() select x).Take(itemAmount).ToArray();
 
-                    for (int x = 0; x < indexList.Count; x++)
+                    int num = 1 + self.bonusRewardCount;
+                    if (self.scaleRewardsByPlayerCount)
                     {
-                        PickupIndex index = indexList[x];
-                        options[x] = new PickupPickerController.Option
-                        {
-                            available = Run.instance.IsPickupAvailable(index),
-                            pickupIndex = index
-                        };
+                        num *= participatingPlayerCount;
                     }
+                    float angle = 360f / (float)num;
+                    Vector3 vector = Quaternion.AngleAxis((float)UnityEngine.Random.Range(0, 360), Vector3.up) * (Vector3.up * 40f + Vector3.forward * 5f);
+                    Quaternion rotation = Quaternion.AngleAxis(angle, Vector3.up);
+                    bool flag = self.bossDrops != null && self.bossDrops.Count > 0;
+                    bool flag2 = self.bossDropTables != null && self.bossDropTables.Count > 0;
+                    int i = 0;
+                    PickupPickerController.Option[] yellowOptions = null;
+                    while (i < num)
+                    {
+                        var track = new TrackBehaviour();
+                        track.PickupSource = PickupSource.Boss;
 
-                    var track = new TrackBehaviour();
-                    track.PickupSource = PickupSource.Boss;
-                    track.ItemTag = ItemTag.Any;
-                    track.Options = options;
+                        var options2 = options;
+                        PickupIndex pickupIndex2 = pickupIndex;
+                        if (self.bossDrops != null && ((flag || flag2) && self.rng.nextNormalizedFloat <= self.bossDropChance))
+                        {
+                            track.PickupSource = PickupSource.YellowBoss;
+                            Debug.Log($"Generated Boss Rewards");
+                            if (flag2)
+                            {
+                                PickupDropTable pickupDropTable = self.rng.NextElementUniform<PickupDropTable>(self.bossDropTables);
+                                if (pickupDropTable != null)
+                                {
+                                    pickupIndex2 = pickupDropTable.GenerateDrop(self.rng);
+                                }
+                            }
+                            else
+                            {
+                                pickupIndex2 = self.rng.NextElementUniform<PickupIndex>(self.bossDrops);
+                            }
 
-                    CreatePickupDroplet(pickupIndex2, self.dropPosition.position, vector, track);
-                    i++;
-                    vector = rotation * vector;
+                            if (onForYellowBossDrops.Value)
+                            {
+                                if (sameBossDrops.Value)
+                                {
+                                    if (yellowOptions == null)
+                                        yellowOptions = (from x in PickupPickerController.GetOptionsFromPickupIndex(pickupIndex2) orderby self.rng.Next() select x).Take(itemAmountBoss.Value).ToArray();
+
+                                    options2 = yellowOptions;
+                                }
+                                else
+                                {
+                                    options2 = (from x in PickupPickerController.GetOptionsFromPickupIndex(pickupIndex2) orderby self.rng.Next() select x).Take(itemAmountBoss.Value).ToArray();
+                                }                                
+                            }
+                            else
+                            {
+                                options2 = [ new PickupPickerController.Option {
+                                        available = Run.instance.IsPickupAvailable(pickupIndex2),
+                                        pickupIndex = pickupIndex2
+                                }];
+                            }
+                        }
+                        
+                        track.ItemTag = ItemTag.Any;
+                        track.Options = options2;
+
+                        CreatePickupDroplet(pickupIndex2, self.dropPosition.position, vector, track);
+                        i++;
+                        vector = rotation * vector;
+                    }
+                    return;
                 }
+                Debug.LogWarning("dropPosition not set for BossGroup! No item will be spawned.");
             }
         }
 
@@ -599,7 +611,7 @@ namespace ImprovedCommandEssence
 
             TrackBehaviour track = new TrackBehaviour();
 
-            if (onForHidden.Value && !self.hidden)
+            if (!(onForHidden.Value && self.hidden))
             {
                 track.PickupSource = PickupSource.Terminal;
             }
@@ -622,7 +634,7 @@ namespace ImprovedCommandEssence
         {
             if (CommandArtifactManager.IsCommandArtifactEnabled)
             {
-                pickupInfo.artifactFlag |= GenericPickupController.PickupArtifactFlag.COMMAND;
+                pickupInfo.artifactFlag &= ~GenericPickupController.PickupArtifactFlag.COMMAND;
             }
             GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(PickupDropletController.pickupDropletPrefab, pickupInfo.position, Quaternion.identity);
             PickupDropletController component = gameObject.GetComponent<PickupDropletController>();
@@ -653,32 +665,47 @@ namespace ImprovedCommandEssence
 
             if (NetworkServer.active && self.alive)
             {
-                List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite };
-                List<ItemDef> specialDropIds = new List<ItemDef>() { RoR2Content.Items.TitanGoldDuringTP, RoR2Content.Items.ArtifactKey, RoR2Content.Items.Pearl, RoR2Content.Items.ShinyPearl };
+                List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite, DLC1Content.Equipment.EliteVoidEquipment, DLC1Content.Elites.Earth.eliteEquipmentDef };
+                //List<ItemDef> specialDropIds = new List<ItemDef>() { RoR2Content.Items.TitanGoldDuringTP, RoR2Content.Items.ArtifactKey, RoR2Content.Items.Pearl, RoR2Content.Items.ShinyPearl };
 
-                //Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.pickupDef.itemIndex}");
+                Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.pickupDef.itemIndex}");
                 self.alive = false;
                 self.createPickupInfo.position = self.transform.position;
                 bool flag = true;
 
                 var trackBool = self.gameObject.TryGetComponent<TrackBehaviour>(out var track);
+                var pi = PickupCatalog.GetPickupDef(self.pickupIndex);
+                bool isWorldUnique = false;
 
+                if ((int)pi.itemIndex != -1)
+                {
+                    var itemDef = ItemCatalog.GetItemDef(pi.itemIndex);
+                    isWorldUnique = itemDef.ContainsTag(ItemTag.WorldUnique);
+                }
 
                 bool doChance = UnityEngine.Random.Range(0, 100f) < essenceChance.Value;
-                
-                if (!doChance || 
+                if (!doChance ||
+                    isWorldUnique ||
                     (!onForDelusion.Value && self.createPickupInfo.artifactFlag.HasFlag(GenericPickupController.PickupArtifactFlag.DELUSION)) ||
                     (!onInBazaar.Value && BazaarController.instance != null) ||
-                    (!scrappersDropEssence.Value && trackBool && track.PickupSource == PickupSource.Scrapper ) ||
+                    (!scrappersDropEssence.Value && trackBool && track.PickupSource == PickupSource.Scrapper) ||
                     (!onForAdaptive.Value && trackBool && track.PickupSource == PickupSource.Roulette) ||
                     (!onInDropShip.Value && trackBool && track.PickupSource == PickupSource.Terminal) ||
                     (!onForTrophy.Value && trackBool && track.PickupSource == PickupSource.BossHunter) ||
                     (!onForPotential.Value && trackBool && track.PickupSource == PickupSource.VoidPotential) ||
                     (self.pickupIndex.pickupDef == null || (self.pickupIndex.pickupDef.itemIndex == ItemIndex.None && self.pickupIndex.pickupDef.equipmentIndex == EquipmentIndex.None && self.pickupIndex.pickupDef.itemTier == ItemTier.NoTier)) ||
-                    (eliteEquipIds.Any(x => x.equipmentIndex == self.pickupIndex.pickupDef.equipmentIndex)) ||
-                    (specialDropIds.Any(x => x.itemIndex == self.pickupIndex.pickupDef.itemIndex)) ||
-                    (crossModCompatibility.Contains(self.pickupIndex.ToString())))
-                        GenericPickupController.CreatePickup(self.createPickupInfo);
+                    (eliteEquipIds.Any(x => x.equipmentIndex == self.pickupIndex.pickupDef.equipmentIndex)) //||
+                    //(specialDropIds.Any(x => x.itemIndex == self.pickupIndex.pickupDef.itemIndex)) //||
+                    //(crossModCompatibility.Contains(self.pickupIndex.ToString()))
+                    )
+                {
+                    GenericPickupController.CreatePickup(self.createPickupInfo);
+                }
+                else if(trackBool && track.Options.Count() == 1)
+                {
+                    self.createPickupInfo.pickerOptions = track.Options;
+                    GenericPickupController.CreatePickup(self.createPickupInfo);
+                }
                 else
                     CreateCommandCube(ref self.createPickupInfo, ref flag, track);
 
@@ -710,6 +737,9 @@ namespace ImprovedCommandEssence
             component.SetOptionsFromPickupForCommandArtifact(pickupIndex);
             component.chestGeneratedFrom = createPickupInfo.chest;
 
+            if(component.options.Count() == 1)
+
+
             NetworkServer.Spawn(gameObject);
             shouldSpawn = false;
         }
@@ -734,6 +764,11 @@ namespace ImprovedCommandEssence
                 self.SetOptionsServer(tracking.Options);
                 return;
             }
+            else if (tracking != null && tracking.PickupSource == PickupSource.YellowBoss)
+            {
+                self.SetOptionsServer(tracking.Options);
+                return;
+            }
             else
                 switch (pickupIndex.pickupDef.itemTier)
                 {
@@ -750,7 +785,7 @@ namespace ImprovedCommandEssence
                         itemSelection = Run.instance.availableBossDropList.ToArray();
                         break;
                     case ItemTier.Lunar:
-                            itemSelection = Run.instance.availableLunarItemDropList.ToArray();
+                        itemSelection = Run.instance.availableLunarItemDropList.ToArray();
                         break;
                     case ItemTier.VoidTier1:
                         itemSelection = Run.instance.availableVoidTier1DropList.ToArray();
@@ -762,14 +797,27 @@ namespace ImprovedCommandEssence
                         itemSelection = Run.instance.availableVoidTier3DropList.ToArray();
                         break;
                     case ItemTier.VoidBoss:
-                        itemSelection = Run.instance.availableVoidBossDropList.ToArray();
+                        itemSelection = Run.instance.availableVoidBossDropList.ToArray();                        
                         break;
                     case ItemTier.NoTier:
                         if (pickupIndex.pickupDef.equipmentIndex != EquipmentIndex.None)
                             if (pickupIndex.pickupDef.isLunar)
                                 itemSelection = Run.instance.availableLunarEquipmentDropList.ToArray();
                             else
-                                itemSelection = Run.instance.availableEquipmentDropList.ToArray();
+                            {/*
+                                List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite, DLC1Content.Elites.Earth.eliteEquipmentDef };
+
+                                if (onForAspect.Value && eliteEquipIds.Any(x => x.equipmentIndex == pickupIndex.pickupDef.equipmentIndex))
+                                {
+                                    itemAmount = itemAmountAspect.Value;
+                                    itemSelection = eliteEquipIds.Select(x => PickupCatalog.FindPickupIndex($"EquipmentIndex.{x.name}")).ToArray();
+                                    itemSelection.ForEachTry(x => x.pickupDef.unlockableDef.hidden = false);
+
+                                    Logger.LogDebug(JsonUtility.ToJson(itemSelection));
+                                }
+                                else*/
+                                    itemSelection = Run.instance.availableEquipmentDropList.ToArray();
+                            }
                         break;
                 }
 
@@ -788,8 +836,10 @@ namespace ImprovedCommandEssence
             }
             else
             {
-                System.Random rnd = new System.Random();
-                List<PickupIndex> indexList = (from x in itemSelection.ToList() orderby rnd.Next() select x).Take(itemAmount).ToList();
+                var rng = Run.instance.treasureRng;
+
+                //System.Random rnd = new System.Random();
+                List<PickupIndex> indexList = (from x in itemSelection.ToList() orderby rng.Next() select x).Take(itemAmount).ToList();
                 options = new PickupPickerController.Option[indexList.Count];
 
                 for (int i = 0; i < indexList.Count; i++)
@@ -863,6 +913,7 @@ namespace ImprovedCommandEssence
         Chest,
         Terminal,
         Boss,
+        YellowBoss,
         BossHunter,
         Roulette,
         Scrapper,

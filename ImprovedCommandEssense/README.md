@@ -1,5 +1,5 @@
-# Now with fixed Compatibility for StarStorm 2 & Forgotten Relics
-(+more - read 1.3.4 notes)
+# Now with fixed Compatibility for StarStorm 2, Forgotten Relics, Zet Aspects, & more
+(MOD DEVS: for mod compatability, ensure your special item drops are tagged with 'ItemTag.WorldUnique')
 
 ## Why?
 
@@ -35,9 +35,11 @@ The default values are how I like to play, change these up to fit your playstyle
 | Void Potential (White Sphere)  |  6 |
 | Void Cache (Purple Sphere)  |  4 |
 
+(Boss is used when 'onForYellowBossDrops' is set to true)<br />
+(Aspect is used when 'onForAspect' is set to true)<br />
 (All void tiers use the same config)<br />
 (Lunar items and lunar equipment use the same config)<br/>
-(Void Potential and Void Cache config is used when onForPotential is set to false)
+(Void Potential and Void Cache config is used when 'onForPotential' is set to false)
 
 #### Toggle Options
 | Name             |    default      | Description |
@@ -49,22 +51,30 @@ The default values are how I like to play, change these up to fit your playstyle
 | sameBossDrops | true | If true, the Command Essences dropped from the teleporter boss of the same rarity will contain the same options |
 | onForTrophy | false | If false, bosses killed with the Trophy Hunter's Tricorn will drop the related item and not a Command Essence |
 | onForAdaptive | false | Set if Adaptive Chests drop their items (false) or Command Essence (true) |
-| onForPotential | false | Set if Void Cache and Void Triples drop a Void Potential (false) Command Essence (true) |
-| onForDelusion | false | Set if the items dropped by the Delusion artifact drop as their item or a Command Essence |
+| onForYellowBossDrops | true | Set if boss items dropped by the teleporter event will drop a Command Essence (true) or their item (false). |
+| onForPotential | false | Set if Void Cache and Void Triples drop a Void Potential (false) or a Command Essence (true) |
+| onForDelusion | false | Set if the items dropped by the Delusion artifact drop as their item (false) or a Command Essence (true) |
 | enableScrappers | false | Set if Scrappers spawn |
-| enablePrinters | false | Set if Printers spawn (onInDropShip must be on to drop as the item) |
-| enableMultishop | false | Set if Multishops spawn (onInDropShip must be on to drop as the item) |
+| enablePrinters | false | Set if Printers spawn (onInDropShip must be false to drop as the item) |
+| enableMultishop | false | Set if Multishops spawn (onInDropShip must be false to drop as the item) |
 | scrappersDropEssence | false | Set if Scrappers drop scrap (false) or a Command Essence (true) |
 | essenceChance | 100 | Set the chance for items to drop as Command Essences (0-100) |
 
-*(By default the only Terminal Shops that spawn in Command runs are Drop Ships but this toggle affects all of them)
-
-#### Compatibility
-| Name             |    default      | Description |
-|----------|:-------------:|------------|
-| customCompatibility  | empty | Add items to exclude them from dropping as Command Essences, use commas to seperate entries, ie: "ItemIndex.ZetAspectWhite, ItemIndex.ZetAspectBlue, ItemIndex.ZetAspectRed" |
+* (By default the only Terminal Shops that spawn in Command runs are Drop Ships but this toggle affects all of them)
 
 ## Changelog
+
+**1.4.1**
+
+(Bug Fix) Accidentally commented out Aspects dropping as Aspects
+
+**1.4.0**
+
+* (Feature) Added 'onForYellowBossDrops' to have the option for boss drops to give their respective item instead of a command essence
+* (Compatability) Further improved compatability with other mods by properly using the 'WorldUnique' item tag rather than Item Index names (custom compatability no longer needed)
+* (Bug Fix) Fixed teleporter drop sometimes having the same items when 'sameBossDrops' was false
+* (Bug Fix) Fixed Aspect of Earth dropping as a normal equiptment Command Essence
+* (Bug Fix) Fixed 'onForHidden' being false forcing all terminals to drop as Command Essence, overwriting 'onForDropShip'
 
 **1.3.6**
 
@@ -149,7 +159,10 @@ The default values are how I like to play, change these up to fit your playstyle
 
 ## Future Plans
 
+**Aspect Options**<br/>
+Looking to add configuration to allow Aspect drops to give you a set of options containing Aspects<br />
+Having a problem getting the aspect options to be selectable in the Command Essence (they have a lock >.<)
 
 ## Contact for bugs and suggestions
 
-Contact through GitHub Issues page to raie bugs and suggestions
+Contact through GitHub Issues page to raise bugs and suggestions
