@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using EntityStates.Scrapper;
-using R2API.Utils;
 using RoR2;
 using RoR2.Artifacts;
 using UnityEngine;
 using UnityEngine.Networking;
-using static Rewired.InputMapper;
 
 namespace ImprovedCommandEssence
 {
@@ -21,7 +17,7 @@ namespace ImprovedCommandEssence
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Cercain";
         public const string PluginName = "ImprovedCommandEssence";
-        public const string PluginVersion = "1.3.1";
+        public const string PluginVersion = "1.4.2";
 
         public static ConfigFile configFile = new ConfigFile(Paths.ConfigPath + "\\ImprovedCommandEssence.cfg", true);
 
@@ -31,7 +27,7 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<int> itemAmountLunar { get; set; }
         public static ConfigEntry<int> itemAmountVoid { get; set; }
         public static ConfigEntry<int> itemAmountEquip { get; set; }
-        //public static ConfigEntry<int> itemAmountAspect { get; set; }
+        public static ConfigEntry<int> itemAmountAspect { get; set; }
         public static ConfigEntry<int> itemAmountPotential { get; set; }
         public static ConfigEntry<int> itemAmountPotentialCache { get; set; }
         public static ConfigEntry<int> itemAmountBoss { get; set; }
@@ -43,7 +39,7 @@ namespace ImprovedCommandEssence
         public static ConfigEntry<bool> onForYellowBossDrops { get; set; }
         public static ConfigEntry<bool> onForPotential { get; set; }
         public static ConfigEntry<bool> onForDelusion { get; set; }
-        //public static ConfigEntry<bool> onForAspect { get; set; }
+        public static ConfigEntry<bool> onForAspect { get; set; }
         public static ConfigEntry<bool> sameBossDrops { get; set; }
         public static ConfigEntry<bool> onForTrophy { get; set; }
         public static ConfigEntry<bool> enableScrappers { get; set; }
@@ -88,7 +84,7 @@ namespace ImprovedCommandEssence
             itemAmountLunar = configFile.Bind("ImprovedCommandEssence", "itemAmountLunar", 2, new ConfigDescription("Set the amount of Blue items shown when opening Lunar Command Essences."));
             itemAmountVoid = configFile.Bind("ImprovedCommandEssence", "itemAmountVoid", 2, new ConfigDescription("Set the amount of Blue items shown when opening Void Command Essences."));
             itemAmountEquip = configFile.Bind("ImprovedCommandEssence", "itemAmountEquip", 4, new ConfigDescription("Set the amount of Orange items shown when opening Equiptment Command Essences."));
-            //itemAmountAspect = configFile.Bind("ImprovedCommandEssence", "itemAmountAspect", 2, new ConfigDescription("Set the amount of Aspect items shown when opening Aspect Command Essences."));
+            itemAmountAspect = configFile.Bind("ImprovedCommandEssence", "itemAmountAspect", 2, new ConfigDescription("Set the amount of Aspect items shown when opening Aspect Command Essences."));
             itemAmountPotential = configFile.Bind("ImprovedCommandEssence", "itemAmountPotential", 6, new ConfigDescription("Set the amount of items shown when opening a Void Potential from a Void Cache."));
             itemAmountPotentialCache = configFile.Bind("ImprovedCommandEssence", "itemAmountPotentialCache", 4, new ConfigDescription("Set the amount of items shown when opening a Void Potential from a Void Triple."));
             essenceChance = configFile.Bind("ImprovedCommandEssence", "essenceChance", 100, new ConfigDescription("Set the chance for item drops to drop as a Command Essence (0-100) from non-explicit chests"));
@@ -100,7 +96,7 @@ namespace ImprovedCommandEssence
             onForYellowBossDrops = configFile.Bind("ImprovedCommandEssence", "onForYellowBossDrops", true, new ConfigDescription("Set if boss items dropped by the teleporter event will drop a Command Essence (true) or their item (false)."));
             onForPotential = configFile.Bind("ImprovedCommandEssence", "onForPotential", false, new ConfigDescription("Set if the Command Artifact is turn on for Void Potentials and Void Caches."));
             onForDelusion = configFile.Bind("ImprovedCommandEssence", "onForDelusion", false, new ConfigDescription("Set if the items dropped by the Delusion artifact drop as their item or a Command Essence."));
-            //onForAspect = configFile.Bind("ImprovedCommandEssence", "onForAspect", false, new ConfigDescription("Set if the Aspects dropped by Elites drop as their item or a Command Essence."));
+            onForAspect = configFile.Bind("ImprovedCommandEssence", "onForAspect", false, new ConfigDescription("Set if the Aspects dropped by Elites drop as their item or a Command Essence."));
             sameBossDrops = configFile.Bind("ImprovedCommandEssence", "sameBossDrops", true, new ConfigDescription("Set if the Command Essences that drop from the Teleporter boss give the same options."));
             onForTrophy = configFile.Bind("ImprovedCommandEssence", "onForTrophy", false, new ConfigDescription("Set if the item dropped by bosses killed via Trophy Hunter's Tricorn drop as a Command Essence (true) or the boss item (false)"));
             enableScrappers = configFile.Bind("ImprovedCommandEssence", "enableScrappers", false, new ConfigDescription("Set if Scrappers spawn"));
@@ -668,7 +664,7 @@ namespace ImprovedCommandEssence
                 List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite, DLC1Content.Equipment.EliteVoidEquipment, DLC1Content.Elites.Earth.eliteEquipmentDef };
                 //List<ItemDef> specialDropIds = new List<ItemDef>() { RoR2Content.Items.TitanGoldDuringTP, RoR2Content.Items.ArtifactKey, RoR2Content.Items.Pearl, RoR2Content.Items.ShinyPearl };
 
-                Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.pickupDef.itemIndex}");
+                //Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.pickupDef.itemIndex}:{self.pickupIndex.pickupDef.equipmentIndex}");
                 self.alive = false;
                 self.createPickupInfo.position = self.transform.position;
                 bool flag = true;
@@ -694,7 +690,7 @@ namespace ImprovedCommandEssence
                     (!onForTrophy.Value && trackBool && track.PickupSource == PickupSource.BossHunter) ||
                     (!onForPotential.Value && trackBool && track.PickupSource == PickupSource.VoidPotential) ||
                     (self.pickupIndex.pickupDef == null || (self.pickupIndex.pickupDef.itemIndex == ItemIndex.None && self.pickupIndex.pickupDef.equipmentIndex == EquipmentIndex.None && self.pickupIndex.pickupDef.itemTier == ItemTier.NoTier)) ||
-                    (eliteEquipIds.Any(x => x.equipmentIndex == self.pickupIndex.pickupDef.equipmentIndex)) //||
+                    (!onForAspect.Value && eliteEquipIds.Any(x => x.equipmentIndex == self.pickupIndex.pickupDef.equipmentIndex)) //||
                     //(specialDropIds.Any(x => x.itemIndex == self.pickupIndex.pickupDef.itemIndex)) //||
                     //(crossModCompatibility.Contains(self.pickupIndex.ToString()))
                     )
@@ -770,56 +766,14 @@ namespace ImprovedCommandEssence
                 return;
             }
             else
-                switch (pickupIndex.pickupDef.itemTier)
-                {
-                    case ItemTier.Tier1:
-                        itemSelection = Run.instance.availableTier1DropList.ToArray();
-                        break;
-                    case ItemTier.Tier2:
-                        itemSelection = Run.instance.availableTier2DropList.ToArray();
-                        break;
-                    case ItemTier.Tier3:
-                        itemSelection = Run.instance.availableTier3DropList.ToArray();
-                        break;
-                    case ItemTier.Boss:
-                        itemSelection = Run.instance.availableBossDropList.ToArray();
-                        break;
-                    case ItemTier.Lunar:
-                        itemSelection = Run.instance.availableLunarItemDropList.ToArray();
-                        break;
-                    case ItemTier.VoidTier1:
-                        itemSelection = Run.instance.availableVoidTier1DropList.ToArray();
-                        break;
-                    case ItemTier.VoidTier2:
-                        itemSelection = Run.instance.availableVoidTier2DropList.ToArray();
-                        break;
-                    case ItemTier.VoidTier3:
-                        itemSelection = Run.instance.availableVoidTier3DropList.ToArray();
-                        break;
-                    case ItemTier.VoidBoss:
-                        itemSelection = Run.instance.availableVoidBossDropList.ToArray();                        
-                        break;
-                    case ItemTier.NoTier:
-                        if (pickupIndex.pickupDef.equipmentIndex != EquipmentIndex.None)
-                            if (pickupIndex.pickupDef.isLunar)
-                                itemSelection = Run.instance.availableLunarEquipmentDropList.ToArray();
-                            else
-                            {/*
-                                List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite, DLC1Content.Elites.Earth.eliteEquipmentDef };
+                itemSelection = PickupTransmutationManager.GetAvailableGroupFromPickupIndex(pickupIndex);
 
-                                if (onForAspect.Value && eliteEquipIds.Any(x => x.equipmentIndex == pickupIndex.pickupDef.equipmentIndex))
-                                {
-                                    itemAmount = itemAmountAspect.Value;
-                                    itemSelection = eliteEquipIds.Select(x => PickupCatalog.FindPickupIndex($"EquipmentIndex.{x.name}")).ToArray();
-                                    itemSelection.ForEachTry(x => x.pickupDef.unlockableDef.hidden = false);
-
-                                    Logger.LogDebug(JsonUtility.ToJson(itemSelection));
-                                }
-                                else*/
-                                    itemSelection = Run.instance.availableEquipmentDropList.ToArray();
-                            }
-                        break;
-                }
+            List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite, DLC1Content.Elites.Earth.eliteEquipmentDef };
+            if (onForAspect.Value && eliteEquipIds.Any(x => x.equipmentIndex == pickupIndex.pickupDef.equipmentIndex))
+            {
+                itemSelection = eliteEquipIds.Select(x => PickupCatalog.FindPickupIndex(x.equipmentIndex)).ToArray();
+                itemAmount = itemAmountAspect.Value;
+            }
 
             PickupPickerController.Option[] options;
 
@@ -847,7 +801,7 @@ namespace ImprovedCommandEssence
                     PickupIndex index = indexList[i];
                     options[i] = new PickupPickerController.Option
                     {
-                        available = Run.instance.IsPickupAvailable(index),
+                        available = true,
                         pickupIndex = index
                     };
                 }
