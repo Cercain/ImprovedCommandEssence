@@ -1,5 +1,9 @@
 ## Changelog
 
+**1.4.3**
+
+* (Bug Fix) Fixed non-host players unable to see the Command Essence
+
 **1.4.2**
 
 * (Feature) Added 'onForAspect' & 'itemAmountAspect' to have the option for Aspects to drop as Command Essences containing Aspects

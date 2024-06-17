@@ -17,7 +17,7 @@ namespace ImprovedCommandEssence
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Cercain";
         public const string PluginName = "ImprovedCommandEssence";
-        public const string PluginVersion = "1.4.2";
+        public const string PluginVersion = "1.4.3";
 
         public static ConfigFile configFile = new ConfigFile(Paths.ConfigPath + "\\ImprovedCommandEssence.cfg", true);
 
@@ -645,6 +645,7 @@ namespace ImprovedCommandEssence
                 component.createPickupInfo = pickupInfo;
                 component.NetworkpickupIndex = pickupInfo.pickupIndex;
             }
+
             Rigidbody component2 = gameObject.GetComponent<Rigidbody>();
             component2.velocity = velocity;
             component2.AddTorque(UnityEngine.Random.Range(150f, 120f) * UnityEngine.Random.onUnitSphere);
@@ -678,6 +679,7 @@ namespace ImprovedCommandEssence
                     var itemDef = ItemCatalog.GetItemDef(pi.itemIndex);
                     isWorldUnique = itemDef.ContainsTag(ItemTag.WorldUnique);
                 }
+
 
                 bool doChance = UnityEngine.Random.Range(0, 100f) < essenceChance.Value;
                 if (!doChance ||
@@ -713,13 +715,13 @@ namespace ImprovedCommandEssence
         {
             PickupIndex pickupIndex = createPickupInfo.pickupIndex;
             PickupDef pickupDef = PickupCatalog.GetPickupDef(pickupIndex);
-            
+
             if (pickupDef == null || (pickupDef.itemIndex == ItemIndex.None && pickupDef.equipmentIndex == EquipmentIndex.None && pickupDef.itemTier == ItemTier.NoTier))
             {
                 return;
             }
             GameObject gameObject = UnityEngine.Object.Instantiate<GameObject>(CommandArtifactManager.commandCubePrefab, createPickupInfo.position, createPickupInfo.rotation);
-            
+
             if (trackBehaviour != null)
             {
                 var track = gameObject.AddComponent<TrackBehaviour>();
@@ -732,9 +734,6 @@ namespace ImprovedCommandEssence
             PickupPickerController component = gameObject.GetComponent<PickupPickerController>();
             component.SetOptionsFromPickupForCommandArtifact(pickupIndex);
             component.chestGeneratedFrom = createPickupInfo.chest;
-
-            if(component.options.Count() == 1)
-
 
             NetworkServer.Spawn(gameObject);
             shouldSpawn = false;
