@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using BepInEx;
 using BepInEx.Configuration;
@@ -17,7 +18,7 @@ namespace ImprovedCommandEssence
         public const string PluginGUID = PluginAuthor + "." + PluginName;
         public const string PluginAuthor = "Cercain";
         public const string PluginName = "ImprovedCommandEssence";
-        public const string PluginVersion = "1.4.3";
+        public const string PluginVersion = "1.4.4";
 
         public static ConfigFile configFile = new ConfigFile(Paths.ConfigPath + "\\ImprovedCommandEssence.cfg", true);
 
@@ -128,11 +129,12 @@ namespace ImprovedCommandEssence
 
             if (!onForPotential.Value)
             {
-                On.RoR2.OptionChestBehavior.ItemDrop += OptionItemDrop;
                 On.RoR2.OptionChestBehavior.Roll += PotentialRoll;
             }
+
+            On.RoR2.OptionChestBehavior.ItemDrop += OptionItemDrop;
         }
-        
+
 
         [Server]
         public void PotentialRoll(On.RoR2.OptionChestBehavior.orig_Roll orig, RoR2.OptionChestBehavior self)
@@ -665,7 +667,7 @@ namespace ImprovedCommandEssence
                 List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite, DLC1Content.Equipment.EliteVoidEquipment, DLC1Content.Elites.Earth.eliteEquipmentDef };
                 //List<ItemDef> specialDropIds = new List<ItemDef>() { RoR2Content.Items.TitanGoldDuringTP, RoR2Content.Items.ArtifactKey, RoR2Content.Items.Pearl, RoR2Content.Items.ShinyPearl };
 
-                //Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.pickupDef.itemIndex}:{self.pickupIndex.pickupDef.equipmentIndex}");
+                Logger.LogInfo($"Droplet {self.pickupIndex}:{self.pickupIndex.pickupDef.itemIndex}:{self.pickupIndex.pickupDef.equipmentIndex}");
                 self.alive = false;
                 self.createPickupInfo.position = self.transform.position;
                 bool flag = true;
@@ -679,7 +681,6 @@ namespace ImprovedCommandEssence
                     var itemDef = ItemCatalog.GetItemDef(pi.itemIndex);
                     isWorldUnique = itemDef.ContainsTag(ItemTag.WorldUnique);
                 }
-
 
                 bool doChance = UnityEngine.Random.Range(0, 100f) < essenceChance.Value;
                 if (!doChance ||
@@ -716,6 +717,7 @@ namespace ImprovedCommandEssence
             PickupIndex pickupIndex = createPickupInfo.pickupIndex;
             PickupDef pickupDef = PickupCatalog.GetPickupDef(pickupIndex);
 
+            Logger.LogInfo($"PickupDef {pickupDef.internalName}:{pickupDef.itemTier}:{pickupDef.itemIndex}");
             if (pickupDef == null || (pickupDef.itemIndex == ItemIndex.None && pickupDef.equipmentIndex == EquipmentIndex.None && pickupDef.itemTier == ItemTier.NoTier))
             {
                 return;
@@ -765,7 +767,43 @@ namespace ImprovedCommandEssence
                 return;
             }
             else
-                itemSelection = PickupTransmutationManager.GetAvailableGroupFromPickupIndex(pickupIndex);
+                switch (pickupIndex.pickupDef.itemTier)
+                {
+                    case ItemTier.Tier1:
+                        itemSelection = Run.instance.availableTier1DropList.ToArray();
+                        break;
+                    case ItemTier.Tier2:
+                        itemSelection = Run.instance.availableTier2DropList.ToArray();
+                        break;
+                    case ItemTier.Tier3:
+                        itemSelection = Run.instance.availableTier3DropList.ToArray();
+                        break;
+                    case ItemTier.Boss:
+                        itemSelection = Run.instance.availableBossDropList.ToArray();
+                        break;
+                    case ItemTier.Lunar:
+                        itemSelection = Run.instance.availableLunarItemDropList.ToArray();
+                        break;
+                    case ItemTier.VoidTier1:
+                        itemSelection = Run.instance.availableVoidTier1DropList.ToArray();
+                        break;
+                    case ItemTier.VoidTier2:
+                        itemSelection = Run.instance.availableVoidTier2DropList.ToArray();
+                        break;
+                    case ItemTier.VoidTier3:
+                        itemSelection = Run.instance.availableVoidTier3DropList.ToArray();
+                        break;
+                    case ItemTier.VoidBoss:
+                        itemSelection = Run.instance.availableVoidBossDropList.ToArray();
+                        break;
+                    case ItemTier.NoTier:
+                        if (pickupIndex.pickupDef.equipmentIndex != EquipmentIndex.None)
+                            if (pickupIndex.pickupDef.isLunar)
+                                itemSelection = Run.instance.availableLunarEquipmentDropList.ToArray();
+                            else
+                                itemSelection = Run.instance.availableEquipmentDropList.ToArray();
+                        break;
+                }
 
             List<EquipmentDef> eliteEquipIds = new List<EquipmentDef>() { RoR2Content.Equipment.AffixBlue, RoR2Content.Equipment.AffixHaunted, RoR2Content.Equipment.AffixLunar, RoR2Content.Equipment.AffixPoison, RoR2Content.Equipment.AffixRed, RoR2Content.Equipment.AffixWhite, DLC1Content.Elites.Earth.eliteEquipmentDef };
             if (onForAspect.Value && eliteEquipIds.Any(x => x.equipmentIndex == pickupIndex.pickupDef.equipmentIndex))
@@ -805,7 +843,6 @@ namespace ImprovedCommandEssence
                     };
                 }
             }
-
 
             self.SetOptionsServer(options);
         }
@@ -870,6 +907,7 @@ namespace ImprovedCommandEssence
         BossHunter,
         Roulette,
         Scrapper,
-        VoidPotential
+        VoidPotential,
+        Cell
     }
 }

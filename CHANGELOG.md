@@ -1,5 +1,13 @@
 ## Changelog
 
+**1.4.5**
+
+* (Bug Fix) Fixed onForVoidPotential causing Void Potentials to have a broken item selection, reverted previous workaround fix forcing cell reward back to a Command Essence of the right rarity
+
+**1.4.4**
+
+* (Bug Fix) Void Fields' Cell rewards now correctly drop a Void Potential (not affected by configs), this is currently the best I can do as the logic around this is really awkward to hook onto and change
+
 **1.4.3**
 
 * (Bug Fix) Fixed non-host players unable to see the Command Essence
